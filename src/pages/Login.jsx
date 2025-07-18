@@ -1,199 +1,162 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { FaBars, FaTimes } from "react-icons/fa";
+import axiosInstance from "../api/axiosInstance";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 import Logo from "../assets/VibeX.png";
-import Login from "../pages/Login";
-import Register from "../pages/Register";
+import { GoogleLogin } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import { toast } from "react-toastify";
 
-function Navbar() {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [user, setUser] = useState(null);
-  const [showLogin, setShowLogin] = useState(false);
-  const [showRegister, setShowRegister] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false);
+function Login({ closeModal, switchToRegister }) {
+  const [form, setForm] = useState({ email: "", password: "" });
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
-  const userId = JSON.parse(localStorage.getItem("user"))?._id;
   const token = localStorage.getItem("token");
 
+  // 🛡️ Redirect if already logged in
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const response = await axios.get(
-          `http://localhost:5000/api/users/profile/${userId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        setUser(response.data.data); // Assuming user data is in res.data.data
-      } catch (error) {
-        console.error("Error fetching user:", error);
-      }
-    };
-
-    if (userId && token) {
-      fetchUser();
+    if (token) {
+      navigate("/capture-upload");
     }
-  }, [userId, token]);
+  }, [token, navigate]);
 
-  const navLinks = ["Home", "Explore", "Contact"];
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
 
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (!e.target.closest(".profile-dropdown")) {
-        setShowDropdown(false);
-      }
-    };
-    document.addEventListener("click", handleClickOutside);
-    return () => document.removeEventListener("click", handleClickOutside);
-  }, []);
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    if (!form.email || !form.password) {
+      return toast.warning("⚠️ Please fill in all fields.");
+    }
+
+    try {
+      setLoading(true);
+      const res = await axiosInstance.post("/users/login", form);
+
+      localStorage.setItem("user", JSON.stringify(res.data.user));
+      localStorage.setItem("token", res.data.token);
+
+      toast.success("Login successful!");
+      closeModal?.();
+      navigate("/capture-upload");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Login failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      const res = await axiosInstance.post("/users/google-login", {
+        token: credentialResponse.credential,
+      });
+
+      localStorage.setItem("user", JSON.stringify(res.data.user));
+      localStorage.setItem("token", res.data.token);
+
+      toast.success("Google login successful!");
+      closeModal?.();
+      navigate("/capture-upload");
+    } catch (err) {
+      toast.error("Google login failed");
+      console.error(err);
+    }
+  };
 
   return (
-    <>
-      <nav className="w-full fixed top-0 left-0 z-50 bg-white/30 backdrop-blur-md shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <motion.div
-            className="w-32 h-auto"
-            initial={{ x: -30, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-          >
-            <img src={Logo} alt="Logo" className="h-10 w-auto object-contain" />
-          </motion.div>
-
-          <div className="hidden md:flex items-center gap-8">
-            {user &&
-              navLinks.map((link, i) => (
-                <motion.a
-                  key={i}
-                  href={`#${link.toLowerCase()}`}
-                  className="text-gray-700 hover:text-green-600 font-medium"
-                  whileHover={{ scale: 1.05 }}
-                >
-                  {link}
-                </motion.a>
-              ))}
-
-            {!user ? (
-              <button
-                className="px-4 py-2 text-green-600 font-semibold hover:underline"
-                onClick={() => setShowLogin(true)}
-              >
-                Login
-              </button>
-            ) : (
-              <div className="relative profile-dropdown">
-                <img
-                  src={user.avatar || user.baseImage || "https://placehold.co/100x100"}
-                  alt="Profile"
-                  className="w-10 h-10 rounded-full border-2 border-green-500 cursor-pointer"
-                  onClick={() => setShowDropdown(!showDropdown)}
-                />
-                {showDropdown && (
-                  <div className="absolute flex flex-col top-12 right-0 bg-white shadow-lg rounded-lg py-2 w-36 z-10">
-                    <button
-                      className="px-4 py-2 hover:bg-gray-100 text-sm text-left"
-                      onClick={() => {
-                        navigate(`/profile/${user._id}`);
-                        setShowDropdown(false);
-                      }}
-                    >
-                      Profile
-                    </button>
-                    <button
-                      className="px-4 py-2 hover:bg-gray-100 text-sm text-red-500 text-left"
-                      onClick={() => {
-                        localStorage.removeItem("user");
-                        localStorage.removeItem("token");
-                        setUser(null);
-                        setShowDropdown(false);
-                      }}
-                    >
-                      Logout
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          <div className="md:hidden">
-            <button
-              onClick={() => setMenuOpen(!menuOpen)}
-              className="text-green-700 text-xl"
-            >
-              {menuOpen ? <FaTimes /> : <FaBars />}
-            </button>
-          </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="w-full max-w-md rounded-3xl bg-white/30 backdrop-blur-lg shadow-xl p-8 md:p-10 border border-white/20"
+      >
+        {/* Logo and Heading */}
+        <div className="flex flex-col items-center mb-6">
+          <img src={Logo} alt="VibeX Logo" className="h-10" />
+          <h1 className="text-2xl font-bold text-white mt-2">Welcome Back!</h1>
+          <p className="text-sm text-gray-200">Login to continue your vibe</p>
         </div>
 
-        {menuOpen && (
-          <motion.div
-            initial={{ y: -20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            className="md:hidden px-6 pb-4"
+        {/* Login Form */}
+        <form onSubmit={handleLogin} className="space-y-5">
+          <Input
+            type="email"
+            name="email"
+            value={form.email}
+            onChange={handleChange}
+            placeholder="Enter your email"
+            autoComplete="email"
+          />
+
+          <div className="relative">
+            <Input
+              type={showPassword ? "text" : "password"}
+              name="password"
+              value={form.password}
+              onChange={handleChange}
+              placeholder="Enter your password"
+              autoComplete="current-password"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-4 top-3 text-white/70 hover:text-white"
+            >
+              {showPassword ? <FaEyeSlash /> : <FaEye />}
+            </button>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 rounded-xl transition"
           >
-            <div className="flex flex-col items-start gap-4">
-              {user &&
-                navLinks.map((link, i) => (
-                  <a
-                    key={i}
-                    href={`#${link.toLowerCase()}`}
-                    className="text-gray-700 hover:text-green-600 font-medium"
-                  >
-                    {link}
-                  </a>
-                ))}
+            {loading ? "Logging in..." : "Login"}
+          </button>
+        </form>
 
-              {!user ? (
-                <button
-                  className="text-green-600 font-medium"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    setShowLogin(true);
-                  }}
-                >
-                  Login
-                </button>
-              ) : (
-                <div className="flex items-center gap-3 mt-4">
-                  <img
-                    src={user.avatar || user.baseImage || "https://placehold.co/100x100"}
-                    alt="User"
-                    className="w-10 h-10 rounded-full border-2 border-green-500"
-                  />
-                  <span className="text-gray-800 font-semibold">{user.username}</span>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </nav>
+        {/* Google Login Button */}
+        <div className="mt-6 flex justify-center">
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={() => toast.error("Google login failed")}
+          />
+        </div>
 
-      {showLogin && (
-        <Login
-          closeModal={() => setShowLogin(false)}
-          switchToRegister={() => {
-            setShowLogin(false);
-            setShowRegister(true);
-          }}
-        />
-      )}
-
-      {showRegister && (
-        <Register
-          closeModal={() => setShowRegister(false)}
-          switchToLogin={() => {
-            setShowRegister(false);
-            setShowLogin(true);
-          }}
-        />
-      )}
-    </>
+        {/* Switch to Register */}
+        <div className="mt-6 text-center">
+          <button
+            onClick={switchToRegister}
+            className="text-sm text-white/80 hover:text-green-400 transition"
+          >
+            Don’t have an account? <span className="underline">Register here</span>
+          </button>
+        </div>
+      </motion.div>
+    </div>
   );
 }
 
-export default Navbar;
+// 🔧 Reusable Input Component
+function Input({ type, name, value, placeholder, onChange, autoComplete }) {
+  return (
+    <input
+      type={type}
+      name={name}
+      value={value}
+      placeholder={placeholder}
+      autoComplete={autoComplete}
+      onChange={onChange}
+      required
+      className="w-full px-4 py-3 rounded-xl bg-white/10 text-white placeholder-white/70 border border-white/20 focus:outline-none focus:ring-2 focus:ring-green-400 transition"
+    />
+  );
+}
+
+export default Login;
+

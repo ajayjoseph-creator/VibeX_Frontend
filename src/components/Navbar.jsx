@@ -61,8 +61,7 @@ function Navbar() {
             initial={{ x: -30, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
           >
-            <img src={Logo}onClick={() => navigate("/")} alt="Logo" className="h-10 w-auto object-contain cursor-pointer" />
-            
+            <img src={Logo} alt="Logo" className="h-10 w-auto object-contain" />
           </motion.div>
 
           <div className="hidden md:flex items-center gap-8">
