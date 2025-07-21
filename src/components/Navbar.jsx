@@ -1,196 +1,170 @@
-import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { FaBars, FaTimes } from "react-icons/fa";
-import Logo from "../assets/VibeX.png";
-import Login from "../pages/Login";
-import Register from "../pages/Register";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import {
+  FaHome, FaSearch, FaCompass, FaVideo, FaHeart,
+  FaPlus, FaChartBar, FaUser, FaCircle, FaRobot, FaStream, FaBars, FaTimes
+} from "react-icons/fa";
+import Logo from "../assets/VibeX.png";
+import { motion } from "framer-motion";
 
 function Navbar() {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [user, setUser] = useState(null);
-  const [showLogin, setShowLogin] = useState(false);
-  const [showRegister, setShowRegister] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false);
   const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [showMobileSidebar, setShowMobileSidebar] = useState(false);
 
   const userId = JSON.parse(localStorage.getItem("user"))?._id;
   const token = localStorage.getItem("token");
 
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const response = await axios.get(
-          `http://localhost:5000/api/users/profile/${userId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        setUser(response.data.data); // Assuming user data is in res.data.data
-      } catch (error) {
-        console.error("Error fetching user:", error);
-      }
-    };
-
     if (userId && token) {
-      fetchUser();
+      axios.get(`http://localhost:5000/api/users/profile/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      }).then((res) => {
+        setUser(res.data.data);
+      }).catch(err => console.log(err));
     }
   }, [userId, token]);
 
-  const navLinks = ["Home", "Explore", "Contact"];
+  const navItems = [
+    { name: "Home", icon: <FaHome /> },
+    { name: "Search", icon: <FaSearch /> },
+    { name: "Explore", icon: <FaCompass /> },
+    { name: "Reels", icon: <FaVideo /> },
+    { name: "Messages", icon: <FaStream />, badge: 2 },
+    { name: "Notifications", icon: <FaHeart />, badgeDot: true },
+    { name: "Create", icon: <FaPlus /> },
+    { name: "Dashboard", icon: <FaChartBar /> },
+    { name: "Profile", icon: <FaUser />, action: () => navigate(`/profile/${user?._id}`) },
+    { name: "More", icon: <FaBars /> },
+  ];
 
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (!e.target.closest(".profile-dropdown")) {
-        setShowDropdown(false);
-      }
-    };
-    document.addEventListener("click", handleClickOutside);
-    return () => document.removeEventListener("click", handleClickOutside);
-  }, []);
+  const SidebarContent = ({ isMobile = false }) => (
+    <div className="flex flex-col h-full">
+      {/* Logo */}
+      <motion.div
+        initial={{ x: -30, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        className="flex items-center justify-between mb-8 px-2"
+      >
+        <img
+          src={Logo}
+          alt="Your Logo"
+          className="h-10 w-auto object-contain cursor-pointer"
+          onClick={() => {
+            navigate("/");
+            if (isMobile) setShowMobileSidebar(false);
+          }}
+        />
+        {isMobile && (
+          <button
+            onClick={() => setShowMobileSidebar(false)}
+            className="text-2xl"
+          >
+            <FaTimes />
+          </button>
+        )}
+      </motion.div>
+
+      {/* Nav Items */}
+      <div className="flex flex-col gap-4">
+        {navItems.map(({ name, icon, badge, badgeDot, action }, idx) => (
+          <div
+            key={idx}
+            onClick={() => {
+              action?.();
+              if (isMobile) setShowMobileSidebar(false);
+            }}
+            className="relative flex items-center gap-4 text-lg px-3 py-2 hover:bg-gray-100 rounded-lg cursor-pointer transition"
+          >
+            <span className="text-xl">{icon}</span>
+            <span className={`md:inline ${isMobile ? "hidden" : "hidden md:inline"}`}>{name}</span>
+            {badge && (
+              <span className="absolute top-1 left-5 text-xs bg-red-600 text-white px-1.5 rounded-full">
+                {badge}
+              </span>
+            )}
+            {badgeDot && (
+              <span className="absolute top-2 left-6 w-2 h-2 bg-red-600 rounded-full" />
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* User Section */}
+      {user && (
+        <div className="mt-auto pt-6 border-t border-gray-200">
+          <div
+            className="flex items-center gap-3 cursor-pointer hover:bg-gray-100 px-3 py-2 rounded-lg"
+            onClick={() => setShowDropdown(!showDropdown)}
+          >
+            <img
+              src={user.avatar || user.profileImage || "https://placehold.co/100x100"}
+              alt="profile"
+              className="w-10 h-10 rounded-full border-2 border-green-500 object-cover"
+            />
+            <div>
+              <p className={`font-semibold text-sm md:inline ${isMobile ? "hidden" : "hidden md:inline"}`}>
+                {user.username || user.name}
+              </p>
+            </div>
+          </div>
+
+          {showDropdown && (
+            <div className="absolute bottom-20 bg-white text-black rounded-md shadow-md w-48 py-2">
+              <button
+                className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                onClick={() => navigate(`/profile/${user._id}`)}
+              >
+                Profile
+              </button>
+              <button
+                className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-red-500"
+                onClick={() => {
+                  localStorage.removeItem("user");
+                  localStorage.removeItem("token");
+                  setUser(null);
+                  setShowDropdown(false);
+                }}
+              >
+                Logout
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <>
-      <nav className="w-full fixed top-0 left-0 z-50 bg-white/30 backdrop-blur-md shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <motion.div
-            className="w-32 h-auto"
-            initial={{ x: -30, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-          >
-            <img src={Logo} alt="Logo" className="h-10 w-auto object-contain" />
-          </motion.div>
+      {/* 🖥️ Desktop Sidebar */}
+      <div className="hidden md:flex fixed top-0 left-0 h-screen w-64 bg-white text-black shadow-md z-50 px-4 py-6">
+        <SidebarContent />
+      </div>
 
-          <div className="hidden md:flex items-center gap-8">
-            {user &&
-              navLinks.map((link, i) => (
-                <motion.a
-                  key={i}
-                  href={`#${link.toLowerCase()}`}
-                  className="text-gray-700 hover:text-green-600 font-medium"
-                  whileHover={{ scale: 1.05 }}
-                >
-                  {link}
-                </motion.a>
-              ))}
+      {/* 📱 Mobile Hamburger Button */}
+      <div className="md:hidden fixed top-4 left-4 z-50">
+        <button
+          onClick={() => setShowMobileSidebar(true)}
+          className="text-2xl bg-white shadow-md rounded-full p-2"
+        >
+          <FaBars />
+        </button>
+      </div>
 
-            {!user ? (
-              <button
-                className="px-4 py-2 text-green-600 font-semibold hover:underline"
-                onClick={() => setShowLogin(true)}
-              >
-                Login
-              </button>
-            ) : (
-              <div className="relative profile-dropdown">
-                <img
-                  src={user.avatar || user.baseImage || "https://placehold.co/100x100"}
-                  alt="Profile"
-                  className="w-10 h-10 rounded-full border-2 border-green-500 cursor-pointer"
-                  onClick={() => setShowDropdown(!showDropdown)}
-                />
-                {showDropdown && (
-                  <div className="absolute flex flex-col top-12 right-0 bg-white shadow-lg rounded-lg py-2 w-36 z-10">
-                    <button
-                      className="px-4 py-2 hover:bg-gray-100 text-sm text-left"
-                      onClick={() => {
-                        navigate(`/profile/${user._id}`);
-                        setShowDropdown(false);
-                      }}
-                    >
-                      Profile
-                    </button>
-                    <button
-                      className="px-4 py-2 hover:bg-gray-100 text-sm text-red-500 text-left"
-                      onClick={() => {
-                        localStorage.removeItem("user");
-                        localStorage.removeItem("token");
-                        setUser(null);
-                        setShowDropdown(false);
-                      }}
-                    >
-                      Logout
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          <div className="md:hidden">
-            <button
-              onClick={() => setMenuOpen(!menuOpen)}
-              className="text-green-700 text-xl"
-            >
-              {menuOpen ? <FaTimes /> : <FaBars />}
-            </button>
+      {/* 📱 Mobile Sidebar */}
+      {showMobileSidebar && (
+        <div className="fixed inset-0 z-40">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setShowMobileSidebar(false)}
+          />
+          <div className="fixed top-0 left-0 h-full w-20 bg-white px-2 py-6 z-50 shadow-lg">
+            <SidebarContent isMobile />
           </div>
         </div>
-
-        {menuOpen && (
-          <motion.div
-            initial={{ y: -20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            className="md:hidden px-6 pb-4"
-          >
-            <div className="flex flex-col items-start gap-4">
-              {user &&
-                navLinks.map((link, i) => (
-                  <a
-                    key={i}
-                    href={`#${link.toLowerCase()}`}
-                    className="text-gray-700 hover:text-green-600 font-medium"
-                  >
-                    {link}
-                  </a>
-                ))}
-
-              {!user ? (
-                <button
-                  className="text-green-600 font-medium"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    setShowLogin(true);
-                  }}
-                >
-                  Login
-                </button>
-              ) : (
-                <div className="flex items-center gap-3 mt-4">
-                  <img
-                    src={user.avatar || user.baseImage || "https://placehold.co/100x100"}
-                    alt="User"
-                    className="w-10 h-10 rounded-full border-2 border-green-500"
-                  />
-                  <span className="text-gray-800 font-semibold">{user.username}</span>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </nav>
-
-      {showLogin && (
-        <Login
-          closeModal={() => setShowLogin(false)}
-          switchToRegister={() => {
-            setShowLogin(false);
-            setShowRegister(true);
-          }}
-        />
-      )}
-
-      {showRegister && (
-        <Register
-          closeModal={() => setShowRegister(false)}
-          switchToLogin={() => {
-            setShowRegister(false);
-            setShowLogin(true);
-          }}
-        />
       )}
     </>
   );

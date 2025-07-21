@@ -1,14 +1,16 @@
 import React, { useRef, useState, useEffect } from "react";
 import Webcam from "react-webcam";
 import axios from "axios";
-import { FaUpload,FaCamera } from "react-icons/fa";
+import { FaUpload, FaCamera } from "react-icons/fa";
 import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
 function CaptureUpload() {
   const webcamRef = useRef(null);
   const [capturedImage, setCapturedImage] = useState(null);
   const [uploadStatus, setUploadStatus] = useState("");
   const [userId, setUserId] = useState("");
+  const navigate = useNavigate();
 
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem("user"));
@@ -48,15 +50,23 @@ function CaptureUpload() {
 
       console.log("Uploaded:", response.data);
       toast.success("Upload successful!");
+      setUploadStatus("Upload successful!");
+
+      // Navigate to home after short delay
+      setTimeout(() => {
+        navigate("/"); // 🔁 Change path if your homepage route is different
+      }, 1000);
+
     } catch (err) {
       console.error("Upload error:", err);
       toast.error("Upload failed.");
+      setUploadStatus("Upload failed.");
     }
   };
 
   return (
     <div className="relative w-full h-screen bg-black flex items-center justify-center">
-      {/* Full Screen Webcam with Light Shadow */}
+      {/* Full Screen Webcam */}
       <Webcam
         ref={webcamRef}
         screenshotFormat="image/jpeg"
@@ -71,7 +81,7 @@ function CaptureUpload() {
 
       {/* Buttons */}
       <div className="absolute bottom-10 flex gap-4">
-         <button
+        <button
           onClick={capture}
           className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl shadow-md text-lg flex items-center gap-2"
         >

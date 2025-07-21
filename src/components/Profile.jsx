@@ -1,97 +1,149 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { FiSettings } from "react-icons/fi";
 
 function Profile() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    axios
-      .get(`http://localhost:5000/api/users/profile/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-      .then((res) => setUser(res.data.data))
-      .catch((err) => console.error("Error fetching user:", err));
+    const fetchUser = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await axios.get(`http://localhost:5000/api/users/profile/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        console.log("🌄 Banner Image:", res.data.data);
+        setUser(res.data.data);
+      } catch (err) {
+        console.error("Error fetching user:", err.message);
+      }
+    };
+
+    fetchUser();
   }, [id]);
 
   if (!user)
-    return (
-      <p className="text-center mt-32 text-gray-500 font-medium">
-        Loading profile...
-      </p>
-    );
+    return <p className="text-center mt-32 text-gray-400">Loading profile...</p>;
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-800 px-6 pt-24 font-sans">
-      <div className="max-w-4xl mx-auto">
-        {/* Profile Header */}
-        <div className="flex items-center gap-8">
+    <div className="min-h-screen bg-gradient-to-b from-white to-gray-100 text-black font-sans">
+      {/* Top Banner */}
+      <div
+        className="relative h-48 rounded-b-3xl shadow-md"
+        style={{
+          backgroundImage: `url(${user.bannerImage || "https://res.cloudinary.com/dew9vyhs1/image/upload/v1753091591/vibex_uploads/xrvtrqihsk7r8fqfxrxr.jpg"})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        }}
+      >
+        {/* Removed overlay for better visibility */}
+
+        {/* Profile Image */}
+        <div className="absolute bottom-0 left-6 translate-y-1/2">
           <img
-            src={user.baseImage}
+            src={user.profileImage}
             alt="avatar"
-            className="w-28 h-28 rounded-full object-cover border-4 border-gray-300 shadow-md"
+            className="w-32 h-32 rounded-full border-4 border-white shadow-lg object-cover"
           />
-          <div className="flex-1">
-            <div className="flex items-center gap-4">
-              <h2 className="text-2xl font-semibold">{user.name}</h2>
-              <button className="bg-gray-200 hover:bg-gray-300 transition px-4 py-1 rounded-md text-sm">
-                Edit Profile
-              </button>
-              <button className="bg-gray-200 hover:bg-gray-300 transition px-4 py-1 rounded-md text-sm">
-                Archive
-              </button>
-              <FiSettings className="text-xl text-gray-600 hover:text-black cursor-pointer" />
-            </div>
-            <div className="flex gap-6 mt-4 text-sm">
-              <p>
-                <span className="font-semibold">{user.postsCount || 0}</span>{" "}
-                posts
-              </p>
-              <p>
-                <span className="font-semibold">{user.followers || 0}</span>{" "}
-                followers
-              </p>
-              <p>
-                <span className="font-semibold">{user.following || 0}</span>{" "}
-                following
-              </p>
-            </div>
-            {user.bio && (
-              <div className="mt-3 text-sm whitespace-pre-line text-gray-700">
-                {user.bio}
-              </div>
-            )}
+        </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-4 mt-24">
+        {/* Header Info + Buttons */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-6 rounded-lg shadow-md">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800">{user.name}</h2>
+            <p className="text-gray-500">{user.profession || "Full Stack Dev"}</p>
+          </div>
+          <div className="flex gap-3">
+          <button
+  onClick={() => navigate(`/edit_profile/${user._id}`)}
+  className="bg-white text-green-600 border border-green-500 px-4 py-1 rounded-md hover:bg-green-50 transition"
+>
+  Edit Profile
+</button>
+
+            <button
+              onClick={() => navigate("/interestSelector")}
+              className="bg-green-500 text-white px-4 py-1 rounded-md hover:bg-green-600 transition"
+            >
+              Update Your Vibes
+            </button>
           </div>
         </div>
 
-        {/* Highlights (Dummy) */}
-        <div className="flex gap-4 mt-10">
-          {["Highlights", "10k Fam", "Telegram", "New"].map((label, i) => (
-            <div
-              key={i}
-              className="flex flex-col items-center text-xs text-gray-700"
-            >
-              <div className="w-16 h-16 rounded-full border bg-gray-200 border-gray-300"></div>
-              <p className="mt-1 truncate max-w-[60px] text-center">{label}</p>
-            </div>
-          ))}
+        {/* Counters */}
+        <div className="mt-6 flex gap-6 text-sm text-gray-700">
+          <p><span className="font-bold">{user.postsCount || 0}</span> posts</p>
+          <p><span className="font-bold">{user.followers || 0}</span> followers</p>
+          <p><span className="font-bold">{user.following || 0}</span> following</p>
         </div>
 
-        {/* Posts Grid */}
-        <div className="mt-10 grid grid-cols-3 gap-2">
-          {[1, 2, 3, 4, 5, 6].map((_, i) => (
-            <div
-              key={i}
-              className="aspect-square bg-gray-200 flex items-center justify-center text-gray-500"
-            >
-              Post {i + 1}
+        {/* Bio */}
+        {user.bio && (
+          <div className="mt-4 text-sm text-gray-800 bg-white p-4 rounded-md shadow-md">
+            {user.bio}
+          </div>
+        )}
+
+        {/* 3-Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 mt-10">
+          {/* Left Column - About */}
+          <div className="col-span-1 space-y-4">
+            <div className="bg-white p-4 rounded-md border shadow-sm">
+              <h3 className="font-semibold text-lg mb-3 text-green-600">About</h3>
+              <p className="text-sm text-gray-700">Gender: {user.gender || "NA"}</p>
+              <p className="text-sm text-gray-700">📍 Location: {user.location || "Unknown"}</p>
+              <p className="text-sm text-gray-700">📧 {user.email}</p>
+              <p className="text-sm text-gray-700">📞 {user.phone || "Not Added"}</p>
             </div>
-          ))}
+          </div>
+
+          {/* Center Column - Posts */}
+          <div className="col-span-2 space-y-6">
+            {[1, 2].map((post, i) => (
+              <div key={i} className="bg-white border rounded-lg p-4 shadow-md">
+                <div className="flex items-center gap-3 mb-3">
+                  <img
+                    src={user.profileImage}
+                    className="w-10 h-10 rounded-full object-cover"
+                    alt="avatar"
+                  />
+                  <div>
+                    <p className="font-semibold text-gray-800">{user.name}</p>
+                    <p className="text-xs text-gray-500">3 mins ago</p>
+                  </div>
+                </div>
+                <img
+                  src="https://placehold.co/600x300"
+                  className="w-full rounded-md mb-3"
+                  alt="post"
+                />
+                <p className="text-sm text-gray-700">
+                  {user.name} posted something awesome 🚀🔥
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* Right Column - Suggestions */}
+          <div className="col-span-1 space-y-4">
+            <div className="bg-white p-4 rounded-md border shadow-sm">
+              <h3 className="font-semibold text-lg mb-3 text-green-600">You Might Know</h3>
+              {["Eddie", "Alexey", "Anton"].map((name, i) => (
+                <div key={i} className="flex items-center gap-3 mb-2">
+                  <div className="w-8 h-8 bg-gray-300 rounded-full" />
+                  <div className="text-sm text-gray-800">{name}</div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>

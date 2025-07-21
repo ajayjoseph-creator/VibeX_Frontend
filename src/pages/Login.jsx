@@ -18,7 +18,7 @@ function Login({ closeModal, switchToRegister }) {
   // 🛡️ Redirect if already logged in
   useEffect(() => {
     if (token) {
-      navigate("/capture-upload");
+      navigate("/");
     }
   }, [token, navigate]);
 
@@ -41,7 +41,7 @@ function Login({ closeModal, switchToRegister }) {
 
       toast.success("Login successful!");
       closeModal?.();
-      navigate("/capture-upload");
+      navigate("/");
     } catch (err) {
       toast.error(err.response?.data?.message || "Login failed");
     } finally {
