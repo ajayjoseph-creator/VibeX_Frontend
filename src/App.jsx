@@ -10,6 +10,7 @@ import CaptureUpload from './components/CaptureUpload';
 import UserProfile from './components/Profile';
 import InterestSelector from './components/InterestSelector';
 import EditProfile from './components/EditProfile';
+import UploadReel from './components/UploadReel';
 
 function AppContent() {
   const location = useLocation();
@@ -31,6 +32,7 @@ function AppContent() {
           <Route path="/profile/:id" element={<UserProfile />} />
           <Route path="/interestSelector" element={<InterestSelector />} />
           <Route path="/edit_profile/:id" element={<EditProfile />} />
+          <Route path="/upload_reel" element={<UploadReel />} />
         </Routes>
       </div>
     </div>

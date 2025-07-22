@@ -16,7 +16,7 @@ import {
   FaTableTennis,
 } from "react-icons/fa";
 import { toast } from "react-toastify";
-
+import { useNavigate } from "react-router-dom";
 
 const interests = [
   { icon: <FaCamera />, label: "Photography" },
@@ -35,9 +35,11 @@ const interests = [
   { icon: <FaGamepad />, label: "Video games" },
 ];
 
+
 function InterestSelector() {
   const [selected, setSelected] = useState([]);
   const [loading, setLoading] = useState(false);
+
 
   const toggleInterest = (label) => {
     setSelected((prev) =>
@@ -68,8 +70,8 @@ function InterestSelector() {
 
       if (data.success) {
         toast.success("Vibes updated successfully!");
-
-        // optionally redirect or do something
+        
+        
       } else {
         toast.error("Failed to update vibe ");
       }

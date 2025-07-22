@@ -93,8 +93,9 @@ function Navbar() {
       </div>
 
       {/* User Section */}
-      {user && (
-        <div className="mt-auto pt-6 border-t border-gray-200">
+      <div className="mt-auto pt-6 border-t border-gray-200">
+        {user ? (
+          // ✅ User is logged in
           <div
             className="flex items-center gap-3 cursor-pointer hover:bg-gray-100 px-3 py-2 rounded-lg"
             onClick={() => setShowDropdown(!showDropdown)}
@@ -110,30 +111,51 @@ function Navbar() {
               </p>
             </div>
           </div>
+        ) : (
+          // ❌ Not logged in
+          <div className="flex flex-col gap-2 px-3 py-2">
+            <button
+              onClick={() => {
+                navigate("/login");
+                if (isMobile) setShowMobileSidebar(false);
+              }}
+              className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition"
+            >
+              Login
+            </button>
+            {/* Optional: Register Button */}
+            {/* <button
+              onClick={() => navigate("/register")}
+              className="text-sm text-green-600 hover:underline"
+            >
+              Register
+            </button> */}
+          </div>
+        )}
 
-          {showDropdown && (
-            <div className="absolute bottom-20 bg-white text-black rounded-md shadow-md w-48 py-2">
-              <button
-                className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-                onClick={() => navigate(`/profile/${user._id}`)}
-              >
-                Profile
-              </button>
-              <button
-                className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-red-500"
-                onClick={() => {
-                  localStorage.removeItem("user");
-                  localStorage.removeItem("token");
-                  setUser(null);
-                  setShowDropdown(false);
-                }}
-              >
-                Logout
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+        {showDropdown && user && (
+          <div className="absolute bottom-20 bg-white text-black rounded-md shadow-md w-48 py-2">
+            <button
+              className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+              onClick={() => navigate(`/profile/${user._id}`)}
+            >
+              Profile
+            </button>
+            <button
+              className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-red-500"
+              onClick={() => {
+                localStorage.removeItem("user");
+                localStorage.removeItem("token");
+                navigate('/');
+                setUser(null);
+                setShowDropdown(false);
+              }}
+            >
+              Logout
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 

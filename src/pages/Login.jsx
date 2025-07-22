@@ -60,7 +60,7 @@ function Login({ closeModal, switchToRegister }) {
 
       toast.success("Google login successful!");
       closeModal?.();
-      navigate("/capture-upload");
+      navigate("/");
     } catch (err) {
       toast.error("Google login failed");
       console.error(err);

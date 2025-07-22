@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
+import banner from '../assets/banner1.png'
+import profile from '../assets/DummyProfile.jpeg'
+import { ClipLoader } from "react-spinners";
 
 function Profile() {
   const { id } = useParams();
@@ -11,6 +14,7 @@ function Profile() {
     const fetchUser = async () => {
       try {
         const token = localStorage.getItem("token");
+        console.log('token: ',token)
         const res = await axios.get(`http://localhost:5000/api/users/profile/${id}`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -27,8 +31,14 @@ function Profile() {
     fetchUser();
   }, [id]);
 
-  if (!user)
-    return <p className="text-center mt-32 text-gray-400">Loading profile...</p>;
+  if (!user){
+     return (
+      <div className="flex justify-center items-center h-screen bg-white">
+      <ClipLoader color="#36d7b7" size={50} />
+    </div>
+    );
+  }
+  
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-100 text-black font-sans">
@@ -36,7 +46,7 @@ function Profile() {
       <div
         className="relative h-48 rounded-b-3xl shadow-md"
         style={{
-          backgroundImage: `url(${user.bannerImage || "https://res.cloudinary.com/dew9vyhs1/image/upload/v1753091591/vibex_uploads/xrvtrqihsk7r8fqfxrxr.jpg"})`,
+          backgroundImage: `url(${user.bannerImage || banner  })`,
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
@@ -47,7 +57,7 @@ function Profile() {
         {/* Profile Image */}
         <div className="absolute bottom-0 left-6 translate-y-1/2">
           <img
-            src={user.profileImage}
+            src={user.profileImage || profile}
             alt="avatar"
             className="w-32 h-32 rounded-full border-4 border-white shadow-lg object-cover"
           />
