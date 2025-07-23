@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { storage } from '../client/firebase';
-import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import { ClipLoader } from 'react-spinners';
 import profileDummy from '../assets/DummyProfile.jpeg';
+import { toast } from "react-toastify";
+
 
 function UploadReel() {
   const [file, setFile] = useState(null);
@@ -15,80 +15,70 @@ function UploadReel() {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-  const fetchUser = async () => {
-    const storedUser = localStorage.getItem("user");
-    const token = localStorage.getItem("token");
+    const fetchUser = async () => {
+      const storedUser = localStorage.getItem("user");
+      const token = localStorage.getItem("token");
 
-    if (!storedUser || !token) {
-      console.error("User or token missing");
-      return;
-    }
+      if (!storedUser || !token) return;
 
-    const userData = JSON.parse(storedUser);
-    const userId = userData?._id;
+      const userData = JSON.parse(storedUser);
+      const userId = userData?._id;
 
-    if (!userId) {
-      console.error("User ID missing in parsed data");
-      return;
-    }
-
-    try {
-      const res = await axios.get(
-        `http://localhost:5000/api/users/profile/${userId}`,
-        {
+      try {
+        const res = await axios.get(`http://localhost:5000/api/users/profile/${userId}`, {
           headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      setUser(res.data);
-    } catch (err) {
-      console.error("❌ Failed to fetch user:", err.message);
-    }
-  };
+        });
+        setUser(res.data);
+      } catch (err) {
+        console.error("❌ Failed to fetch user:", err.message);
+      }
+    };
 
-  fetchUser();
-}, []);
+    fetchUser();
+  }, []);
 
-
-  const handleUpload = () => {
+  const handleUpload = async () => {
     if (!file) return;
     setIsUploading(true);
 
-    const storageRef = ref(storage, `reels/${Date.now()}_${file.name}`);
-    const uploadTask = uploadBytesResumable(storageRef, file);
+    const token = localStorage.getItem("token");
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", "reels_upload"); // 👉 Replace this
+    formData.append("cloud_name", "dew9vyhs1");       // 👉 Replace this
+    formData.append("resource_type", "video");
 
-    uploadTask.on(
-      "state_changed",
-      (snapshot) => {
-        const prog = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-        setProgress(prog);
-      },
-      (error) => {
-        console.error("Upload error:", error);
-        setIsUploading(false);
-      },
-      async () => {
-        try {
-          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-          const token = localStorage.getItem("token");
-
-          await axios.post(
-            "http://localhost:5000/api/reels",
-            { videoUrl: downloadURL, caption },
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-
-          alert("🎉 Reel uploaded successfully!");
-          setFile(null);
-          setCaption('');
-          setProgress(0);
-          setPreview(null);
-        } catch (err) {
-          console.error("Backend error:", err.message);
-        } finally {
-          setIsUploading(false);
+    try {
+      const cloudRes = await axios.post(
+        "https://api.cloudinary.com/v1_1/dew9vyhs1/video/upload", // 👉 Replace this
+        formData,
+        {
+          onUploadProgress: (e) => {
+            const percent = Math.round((e.loaded * 100) / e.total);
+            setProgress(percent);
+          },
         }
-      }
-    );
+      );
+
+      const cloudURL = cloudRes.data.secure_url;
+
+      // Save to your backend
+      await axios.post(
+        "http://localhost:5000/api/reels/upload",
+        { videoUrl: cloudURL, caption },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      toast.success("🎉 Reel uploaded successfully!");
+      setFile(null);
+      setCaption('');
+      setProgress(0);
+      setPreview(null);
+    } catch (err) {
+      console.error("Upload failed:", err.message);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -101,7 +91,6 @@ function UploadReel() {
       >
         <h2 className="text-2xl font-bold text-center text-green-700 mb-6">🎥 Upload Your Reel</h2>
 
-        {/* User Preview */}
         {user && (
           <div className="flex items-center gap-3 mb-4">
             <img
@@ -116,7 +105,6 @@ function UploadReel() {
           </div>
         )}
 
-        {/* File Upload */}
         <div className="border-dashed border-2 border-green-300 p-4 rounded-md text-center cursor-pointer bg-green-50 hover:bg-green-100 transition">
           <input
             type="file"
@@ -133,7 +121,6 @@ function UploadReel() {
           </label>
         </div>
 
-        {/* Preview */}
         {preview && (
           <motion.video
             src={preview}
@@ -145,7 +132,6 @@ function UploadReel() {
           />
         )}
 
-        {/* Caption */}
         <input
           type="text"
           placeholder="Write a caption..."
@@ -154,7 +140,6 @@ function UploadReel() {
           className="w-full p-2 mt-4 border rounded-md"
         />
 
-        {/* Upload Button */}
         <button
           onClick={handleUpload}
           disabled={isUploading}
@@ -169,7 +154,6 @@ function UploadReel() {
           )}
         </button>
 
-        {/* Progress Bar */}
         {progress > 0 && (
           <div className="w-full bg-gray-200 rounded-full h-3 mt-4 overflow-hidden">
             <motion.div

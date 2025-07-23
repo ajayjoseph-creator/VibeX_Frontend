@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import {
   FaHome, FaSearch, FaCompass, FaVideo, FaHeart,
-  FaPlus, FaChartBar, FaUser, FaCircle, FaRobot, FaStream, FaBars, FaTimes
+  FaPlus, FaChartBar, FaUser, FaStream, FaBars, FaTimes
 } from "react-icons/fa";
 import Logo from "../assets/VibeX.png";
 import { motion } from "framer-motion";
