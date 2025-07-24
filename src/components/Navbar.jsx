@@ -28,13 +28,13 @@ function Navbar() {
   }, [userId, token]);
 
   const navItems = [
-    { name: "Home", icon: <FaHome /> },
-    { name: "Search", icon: <FaSearch /> },
+    { name: "Home", icon: <FaHome />,action:()=>navigate('/') },
+    { name: "Search", icon: <FaSearch />, action:()=>navigate('/search') },
     { name: "Explore", icon: <FaCompass /> },
-    { name: "Reels", icon: <FaVideo /> },
+    { name: "Reels", icon: <FaVideo /> ,  action: () => navigate("/reels")},
     { name: "Messages", icon: <FaStream />, badge: 2 },
     { name: "Notifications", icon: <FaHeart />, badgeDot: true },
-    { name: "Create", icon: <FaPlus /> },
+    { name: "Create", icon: <FaPlus />, action: () => navigate("/upload_reel") },
     { name: "Dashboard", icon: <FaChartBar /> },
     { name: "Profile", icon: <FaUser />, action: () => navigate(`/profile/${user?._id}`) },
     { name: "More", icon: <FaBars /> },

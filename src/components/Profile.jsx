@@ -4,20 +4,34 @@ import axios from "axios";
 import banner from "../assets/banner1.png";
 import profile from "../assets/DummyProfile.jpeg";
 import { ClipLoader } from "react-spinners";
+import { toast } from "react-toastify";
+import { FiMapPin, FiMail, FiPhone } from "react-icons/fi";
 
 function Profile() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [reels, setReels] = useState([]);
+  const [currentUserId, setCurrentUserId] = useState(null);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      const parsedUser = JSON.parse(storedUser);
+      setCurrentUserId(parsedUser._id);
+    }
+  }, []);
 
   useEffect(() => {
     const fetchUser = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get(`http://localhost:5000/api/users/profile/${id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await axios.get(
+          `http://localhost:5000/api/users/profile/${id}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
         setUser(res.data.data);
       } catch (err) {
         console.error("Error fetching user:", err.message);
@@ -26,7 +40,9 @@ function Profile() {
 
     const fetchUserReels = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/api/reels/user/${id}`);
+        const res = await axios.get(
+          `http://localhost:5000/api/reels/user/${id}`
+        );
         setReels(res.data);
       } catch (err) {
         console.error("Error fetching user reels:", err.message);
@@ -38,6 +54,20 @@ function Profile() {
       fetchUserReels();
     }
   }, [id]);
+
+  const handleFollow = async (targetUserId) => {
+    try {
+      const token = localStorage.getItem("token");
+      await axios.post(
+        `http://localhost:5000/api/users/follow/${targetUserId}`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success("Followed successfully 🎉");
+    } catch (err) {
+      console.error("Follow failed:", err.message);
+    }
+  };
 
   if (!user) {
     return (
@@ -69,30 +99,60 @@ function Profile() {
         <div className="flex justify-between items-center">
           <div>
             <h2 className="text-3xl font-bold">{user.name}</h2>
-            <p className="text-green-600">{user.profession || "Full Stack Dev"}</p>
+            <p className="text-green-600">
+              {user.profession || "Full Stack Dev"}
+            </p>
           </div>
+
           <div className="flex gap-3">
-            <button
-              onClick={() => navigate(`/edit_profile/${user._id}`)}
-              className="border border-green-500 text-green-600 px-4 py-1 rounded-md hover:bg-green-100 transition"
-            >
-              Edit
-            </button>
-            <button
-              onClick={() => navigate("/interestSelector")}
-              className="bg-green-500 text-white px-4 py-1 rounded-md hover:bg-green-600"
-            >
-              Update Vibes
-            </button>
+            {currentUserId === user._id ? (
+              <>
+                <button
+                  onClick={() => navigate(`/edit_profile/${user._id}`)}
+                  className="border border-green-500 text-green-600 px-4 py-1 rounded-md hover:bg-green-100 transition"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => navigate("/interestSelector")}
+                  className="bg-green-500 text-white px-4 py-1 rounded-md hover:bg-green-600"
+                >
+                  Update Vibes
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => handleFollow(user._id)}
+                  className="bg-green-500 text-white px-4 py-1 rounded-md hover:bg-green-600"
+                >
+                  Follow
+                </button>
+                <button
+                  onClick={() => navigate(`/messages/${user._id}`)}
+                  className="border border-gray-300 px-4 py-1 rounded-md hover:bg-gray-100"
+                >
+                  Message
+                </button>
+              </>
+            )}
           </div>
         </div>
 
+        {/* Stats */}
         <div className="flex gap-6 mt-4 text-sm text-gray-700">
-          <span><strong>{user.postsCount || 0}</strong> posts</span>
-          <span><strong>{user.followers || 0}</strong> followers</span>
-          <span><strong>{user.following || 0}</strong> following</span>
+          <span>
+            <strong>{user.postsCount || 0}</strong> posts
+          </span>
+          <span>
+            <strong>{user.followers || 0}</strong> followers
+          </span>
+          <span>
+            <strong>{user.following || 0}</strong> following
+          </span>
         </div>
 
+        {/* Bio */}
         {user.bio && (
           <div className="mt-4 text-sm bg-gray-100 p-4 rounded-lg">
             {user.bio}
@@ -101,15 +161,30 @@ function Profile() {
 
         {/* About + Suggestions */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+          {/* Show About only if current user */}
+          {currentUserId === user._id && (
+            <div className="bg-gray-100 p-4 rounded-lg shadow">
+              <h3 className="text-green-600 font-bold text-lg mb-2">About</h3>
+              <p className="text-sm">Gender: {user.gender || "NA"}</p>
+              <p className="text-sm flex items-center gap-1">
+                <FiMapPin className="text-gray-500" />
+                {user.location || "Unknown"}
+              </p>
+              <p className="text-sm flex items-center gap-1">
+                <FiMail className="text-gray-500" />
+                {user.email}
+              </p>
+              <p className="text-sm flex items-center gap-1">
+                <FiPhone className="text-gray-500" />
+                {user.phone || "Not Added"}
+              </p>
+            </div>
+          )}
+
           <div className="bg-gray-100 p-4 rounded-lg shadow">
-            <h3 className="text-green-600 font-bold text-lg mb-2">About</h3>
-            <p className="text-sm">Gender: {user.gender || "NA"}</p>
-            <p className="text-sm">📍 {user.location || "Unknown"}</p>
-            <p className="text-sm">📧 {user.email}</p>
-            <p className="text-sm">📞 {user.phone || "Not Added"}</p>
-          </div>
-          <div className="bg-gray-100 p-4 rounded-lg shadow">
-            <h3 className="text-green-600 font-bold text-lg mb-2">You Might Know</h3>
+            <h3 className="text-green-600 font-bold text-lg mb-2">
+              You Might Know
+            </h3>
             {["Eddie", "Alexey", "Anton"].map((name, i) => (
               <div key={i} className="flex items-center gap-3 mb-2">
                 <div className="w-8 h-8 bg-gray-300 rounded-full" />
@@ -121,44 +196,45 @@ function Profile() {
 
         {/* Reels Section */}
         <div className="mt-10">
-  <h3 className="text-2xl text-green-600 font-semibold mb-4">Your Reels</h3>
-  {reels.length === 0 ? (
-    <p className="text-sm text-gray-500">No reels uploaded yet.</p>
-  ) : (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-      {reels.map((reel, i) => (
-        <div
-          key={i}
-          className="relative group overflow-hidden rounded-lg border border-gray-300 bg-white shadow-sm hover:shadow-md transition"
-        >
-          {/* Reel Video (9:16) */}
-          <div className="relative w-full" style={{ paddingTop: "177.78%" }}>
-            <video
-              src={reel.videoUrl}
-              className="absolute top-0 left-0 w-full h-full object-cover group-hover:scale-105 group-hover:brightness-75 transition duration-300"
-              muted
-              loop
-              preload="metadata"
-              onMouseEnter={(e) => e.target.play()}
-              onMouseLeave={(e) => e.target.pause()}
-            />
-          </div>
+          <h3 className="text-2xl text-green-600 font-semibold mb-4">Reels</h3>
+          {reels.length === 0 ? (
+            <p className="text-sm text-gray-500">No reels uploaded yet.</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {reels.map((reel, i) => (
+                <div
+                  key={i}
+                  className="relative group overflow-hidden rounded-lg border border-gray-300 bg-white shadow-sm hover:shadow-md transition"
+                >
+                  <div
+                    className="relative w-full"
+                    style={{ paddingTop: "177.78%" }}
+                  >
+                    <video
+                      src={reel.videoUrl}
+                      className="absolute top-0 left-0 w-full h-full object-cover group-hover:scale-105 group-hover:brightness-75 transition duration-300"
+                      muted
+                      loop
+                      preload="metadata"
+                      onMouseEnter={(e) => e.target.play()}
+                      onMouseLeave={(e) => e.target.pause()}
+                    />
+                  </div>
 
-          {/* Overlay Info */}
-          <div className="absolute bottom-0 left-0 w-full px-3 py-2 bg-gradient-to-t from-black/60 to-transparent text-white text-xs">
-            <p className="truncate">{reel.caption || "No caption"}</p>
-            <div className="flex justify-between mt-1 text-[11px] text-gray-300">
-              <span>❤️ {reel.likes.length} likes</span>
-              <span>{new Date(reel.createdAt).toLocaleDateString()}</span>
+                  <div className="absolute bottom-0 left-0 w-full px-3 py-2 bg-gradient-to-t from-black/60 to-transparent text-white text-xs">
+                    <p className="truncate">{reel.caption || "No caption"}</p>
+                    <div className="flex justify-between mt-1 text-[11px] text-gray-300">
+                      <span>❤️ {reel.likes?.length || 0} likes</span>
+                      <span>
+                        {new Date(reel.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
+          )}
         </div>
-      ))}
-    </div>
-  )}
-</div>
-
-
       </div>
     </div>
   );

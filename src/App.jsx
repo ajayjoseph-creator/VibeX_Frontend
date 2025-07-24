@@ -11,6 +11,8 @@ import UserProfile from './components/Profile';
 import InterestSelector from './components/InterestSelector';
 import EditProfile from './components/EditProfile';
 import UploadReel from './components/UploadReel';
+import AllReelsFeed from './components/AllReelsFeed';
+import SearchUsers from './components/SearchUsers';
 
 function AppContent() {
   const location = useLocation();
@@ -33,6 +35,9 @@ function AppContent() {
           <Route path="/interestSelector" element={<InterestSelector />} />
           <Route path="/edit_profile/:id" element={<EditProfile />} />
           <Route path="/upload_reel" element={<UploadReel />} />
+          <Route path="/reels" element={<AllReelsFeed />} />
+          <Route path="/search" element={<SearchUsers />} />
+
         </Routes>
       </div>
     </div>
