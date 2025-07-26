@@ -6,6 +6,8 @@ import profile from "../assets/DummyProfile.jpeg";
 import { ClipLoader } from "react-spinners";
 import { toast } from "react-toastify";
 import { FiMapPin, FiMail, FiPhone } from "react-icons/fi";
+import ReelModal from "../components/ReelModal"; // Importing the modal
+import UserListModal from "../components/UserListModal";
 
 function Profile() {
   const { id } = useParams();
@@ -13,6 +15,9 @@ function Profile() {
   const [user, setUser] = useState(null);
   const [reels, setReels] = useState([]);
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [selectedReel, setSelectedReel] = useState(null);
+  const [showUserList, setShowUserList] = useState(null); // 'followers' | 'following' | null
+
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -22,33 +27,33 @@ function Profile() {
     }
   }, []);
 
+  const fetchUser = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get(
+        `http://localhost:5000/api/users/profile/${id}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setUser(res.data.data);
+    } catch (err) {
+      console.error("Error fetching user:", err.message);
+    }
+  };
+
+  const fetchUserReels = async () => {
+    try {
+      const res = await axios.get(
+        `http://localhost:5000/api/reels/user/${id}`
+      );
+      setReels(res.data);
+    } catch (err) {
+      console.error("Error fetching user reels:", err.message);
+    }
+  };
+
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await axios.get(
-          `http://localhost:5000/api/users/profile/${id}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        setUser(res.data.data);
-      } catch (err) {
-        console.error("Error fetching user:", err.message);
-      }
-    };
-
-    const fetchUserReels = async () => {
-      try {
-        const res = await axios.get(
-          `http://localhost:5000/api/reels/user/${id}`
-        );
-        setReels(res.data);
-      } catch (err) {
-        console.error("Error fetching user reels:", err.message);
-      }
-    };
-
     if (id) {
       fetchUser();
       fetchUserReels();
@@ -63,11 +68,35 @@ function Profile() {
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
+
       toast.success("Followed successfully 🎉");
+      fetchUser();
     } catch (err) {
       console.error("Follow failed:", err.message);
+      toast.error("Follow failed 💥");
     }
   };
+
+  const handleUnfollow = async (targetUserId) => {
+    try {
+      const token = localStorage.getItem("token");
+      await axios.put(
+        `http://localhost:5000/api/users/unfollow/${targetUserId}`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      toast.success("Unfollowed successfully 👋");
+      fetchUser();
+    } catch (err) {
+      console.error("Unfollow failed:", err.message);
+      toast.error("Unfollow failed 💥");
+    }
+  };
+
+  const isFollowing = user?.followers?.some(
+    (f) => f.toString() === currentUserId
+  );
 
   if (!user) {
     return (
@@ -122,12 +151,21 @@ function Profile() {
               </>
             ) : (
               <>
-                <button
-                  onClick={() => handleFollow(user._id)}
-                  className="bg-green-500 text-white px-4 py-1 rounded-md hover:bg-green-600"
-                >
-                  Follow
-                </button>
+                {isFollowing ? (
+                  <button
+                    onClick={() => handleUnfollow(user._id)}
+                    className="bg-red-500 text-white px-4 py-1 rounded-md hover:bg-red-600"
+                  >
+                    Unfollow
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleFollow(user._id)}
+                    className="bg-green-500 text-white px-4 py-1 rounded-md hover:bg-green-600"
+                  >
+                    Follow
+                  </button>
+                )}
                 <button
                   onClick={() => navigate(`/messages/${user._id}`)}
                   className="border border-gray-300 px-4 py-1 rounded-md hover:bg-gray-100"
@@ -140,17 +178,18 @@ function Profile() {
         </div>
 
         {/* Stats */}
-        <div className="flex gap-6 mt-4 text-sm text-gray-700">
-          <span>
-            <strong>{user.postsCount || 0}</strong> posts
-          </span>
-          <span>
-            <strong>{user.followers || 0}</strong> followers
-          </span>
-          <span>
-            <strong>{user.following || 0}</strong> following
-          </span>
-        </div>
+       <div className="flex gap-6 mt-4 text-sm text-gray-700">
+  <span onClick={() => setShowUserList("posts")} className="cursor-pointer hover:underline">
+    <strong>{user.postsCount || 0}</strong> posts
+  </span>
+  <span onClick={() => setShowUserList("followers")} className="cursor-pointer hover:underline">
+    <strong>{user.followers?.length || 0}</strong> followers
+  </span>
+  <span onClick={() => setShowUserList("following")} className="cursor-pointer hover:underline">
+    <strong>{user.following?.length || 0}</strong> following
+  </span>
+</div>
+
 
         {/* Bio */}
         {user.bio && (
@@ -161,7 +200,6 @@ function Profile() {
 
         {/* About + Suggestions */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-          {/* Show About only if current user */}
           {currentUserId === user._id && (
             <div className="bg-gray-100 p-4 rounded-lg shadow">
               <h3 className="text-green-600 font-bold text-lg mb-2">About</h3>
@@ -176,7 +214,7 @@ function Profile() {
               </p>
               <p className="text-sm flex items-center gap-1">
                 <FiPhone className="text-gray-500" />
-                {user.phone || "Not Added"}
+                {user.number || "Not Added"}
               </p>
             </div>
           )}
@@ -204,7 +242,8 @@ function Profile() {
               {reels.map((reel, i) => (
                 <div
                   key={i}
-                  className="relative group overflow-hidden rounded-lg border border-gray-300 bg-white shadow-sm hover:shadow-md transition"
+                  className="relative group overflow-hidden rounded-lg border border-gray-300 bg-white shadow-sm hover:shadow-md transition cursor-pointer"
+                  onClick={() => setSelectedReel(reel)}
                 >
                   <div
                     className="relative w-full"
@@ -236,6 +275,27 @@ function Profile() {
           )}
         </div>
       </div>
+
+      {/* Modal */}
+      {selectedReel && (
+        <ReelModal reel={selectedReel} onClose={() => setSelectedReel(null)} />
+      )}
+
+      {showUserList && (
+  <UserListModal
+    title={
+      showUserList === "followers"
+        ? "Followers"
+        : showUserList === "following"
+        ? "Following"
+        : "Posts"
+    }
+    users={user[showUserList]}
+    onClose={() => setShowUserList(null)}
+    onNavigate={(id) => navigate(`/profile/${id}`)}
+  />
+)}
+
     </div>
   );
 }
