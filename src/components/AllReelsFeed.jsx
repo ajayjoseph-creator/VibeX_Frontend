@@ -4,58 +4,85 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import ReelModal from "../components/ReelModal";
-import PropTypes from "prop-types";
 
 const AllReelsFeed = () => {
   const [reels, setReels] = useState([]);
   const [selectedReel, setSelectedReel] = useState(null);
+  const [likedReelIds, setLikedReelIds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchReels = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const res = await axios.get("http://localhost:5000/api/reels/all");
-        setReels(res.data);
-      } catch (err) {
-        console.error("❌ Failed to fetch reels:", err.message);
-        setError("Failed to load reels. Please try again.");
-        toast.error("Failed to load reels 💥");
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchReels = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await axios.get("http://localhost:5000/api/reels/all");
+      setReels(res.data);
+    } catch (err) {
+      console.error("❌ Failed to fetch reels:", err.message);
+      setError("Failed to load reels. Please try again.");
+      toast.error("Failed to load reels 💥");
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchReels();
   }, []);
+
+  const handleLike = async (reelId) => {
+    try {
+      await axios.put(`http://localhost:5000/api/reels/like/${reelId}`);
+      setLikedReelIds((prev) =>
+        prev.includes(reelId)
+          ? prev.filter((id) => id !== reelId)
+          : [...prev, reelId]
+      );
+
+      // Refresh like count
+      setReels((prev) =>
+        prev.map((reel) =>
+          reel._id === reelId
+            ? {
+                ...reel,
+                likes: prev.includes(reelId)
+                  ? reel.likes.filter((id) => id !== "dummyUser")
+                  : [...reel.likes, "dummyUser"],
+              }
+            : reel
+        )
+      );
+    } catch (err) {
+      toast.error("Failed to like/unlike");
+    }
+  };
+
+  const handleComment = async (reelId, comment) => {
+    try {
+      await axios.post(`http://localhost:5000/api/reels/comment/${reelId}`, {
+        text: comment,
+      });
+      // You can also optionally update the comments in UI
+    } catch (err) {
+      toast.error("Failed to comment");
+    }
+  };
 
   const memoizedReels = useMemo(() => reels, [reels]);
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-100 px-4 py-6">
-        <div className="max-w-5xl mx-auto">
-          <div className="h-8 w-48 bg-gray-200 rounded animate-pulse mx-auto mb-4"></div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[...Array(6)].map((_, i) => (
-              <div
-                key={i}
-                className="relative rounded-lg overflow-hidden bg-gray-200 animate-pulse"
-              >
-                <div className="w-full" style={{ paddingTop: "177.78%" }}></div>
-                <div className="absolute bottom-0 left-0 w-full px-2.5 py-1.5 bg-gray-300">
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className="w-6 h-6 rounded-full bg-gray-400"></div>
-                    <div className="h-4 w-24 bg-gray-400 rounded"></div>
-                  </div>
-                  <div className="h-3 w-3/4 bg-gray-400 rounded"></div>
-                </div>
-              </div>
-            ))}
-          </div>
+        {/* Shimmer Loader */}
+        <div className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[...Array(6)].map((_, i) => (
+            <div
+              key={i}
+              className="h-64 rounded-lg bg-gray-200 animate-pulse"
+            />
+          ))}
         </div>
       </div>
     );
@@ -63,120 +90,84 @@ const AllReelsFeed = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-100 flex justify-center items-center">
+      <div className="min-h-screen flex justify-center items-center">
         <div className="text-center">
-          <p className="text-red-500 text-lg">{error}</p>
-          <motion.button
-            onClick={() => {
-              setLoading(true);
-              setError(null);
-              fetchReels();
-            }}
-            className="mt-4 bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            aria-label="Retry loading reels"
+          <p className="text-red-500">{error}</p>
+          <button
+            className="bg-green-500 text-white px-4 py-2 mt-4 rounded"
+            onClick={fetchReels}
           >
             Retry
-          </motion.button>
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 px-4 sm:px-6 md:px-8 py-6">
-      <motion.h2
-        className="text-2xl md:text-3xl font-bold text-green-500 mb-4 text-center"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
+    <div className="min-h-screen bg-gray-100 px-4 py-6">
+      <h2 className="text-2xl font-bold text-center text-green-500 mb-6">
         🔥 Trending Reels
-      </motion.h2>
+      </h2>
 
-      {memoizedReels.length === 0 ? (
-        <motion.p
-          className="text-gray-500 text-center text-sm"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
-        >
-          No reels found.
-        </motion.p>
-      ) : (
-        <motion.div
-          className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5 }}
-        >
-          {memoizedReels.map((reel, i) => (
-            <motion.div
-              key={i}
-              className="relative group rounded-lg overflow-hidden border border-gray-200 bg-white shadow-sm hover:shadow-md transition cursor-pointer"
-              onClick={() => setSelectedReel(reel)}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.1 * i }}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => e.key === "Enter" && setSelectedReel(reel)}
-              aria-label={`View reel by ${reel.postedBy?.name || "User"}`}
-            >
-              <div className="relative w-full" style={{ paddingTop: "177.78%" }}>
-                <video
-                  src={reel.videoUrl}
-                  className="absolute top-0 left-0 w-full h-full object-cover group-hover:scale-105 group-hover:brightness-75 transition duration-300"
-                  muted
-                  loop
-                  preload="metadata"
-                  onMouseEnter={(e) => e.target.play()}
-                  onMouseLeave={(e) => e.target.pause()}
+      <div className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {memoizedReels.map((reel, i) => (
+          <motion.div
+            key={i}
+            className="relative group cursor-pointer rounded-lg overflow-hidden border bg-white shadow"
+            onClick={() => setSelectedReel(reel)}
+            whileHover={{ scale: 1.02 }}
+          >
+            <div className="relative" style={{ paddingTop: "177.78%" }}>
+              <video
+                src={reel.videoUrl}
+                className="absolute top-0 left-0 w-full h-full object-cover"
+                muted
+                loop
+                onMouseEnter={(e) => e.target.play()}
+                onMouseLeave={(e) => e.target.pause()}
+              />
+            </div>
+            <div className="absolute bottom-0 left-0 w-full px-3 py-2 bg-gradient-to-t from-black/60 to-transparent text-white">
+              <div
+                className="flex items-center gap-2 mb-1 cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/profile/${reel.postedBy?._id}`);
+                }}
+              >
+                <img
+                  src={reel.postedBy?.profileImage || "/default-profile.png"}
+                  className="w-6 h-6 rounded-full border object-cover"
+                  alt="User"
                 />
+                <span className="text-sm font-medium">
+                  {reel.postedBy?.name || "User"}
+                </span>
               </div>
-              <div className="absolute bottom-0 left-0 w-full px-2.5 py-1.5 bg-gradient-to-t from-black/70 to-transparent text-white text-xs">
-                <div
-                  className="flex items-center gap-2 mb-1 cursor-pointer"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/profile/${reel.postedBy?._id}`);
-                  }}
-                >
-                  <img
-                    src={reel.postedBy?.profileImage || "/default-profile.png"}
-                    alt={`${reel.postedBy?.name || "User"}'s avatar`}
-                    className="w-6 h-6 rounded-full object-cover border border-green-500"
-                  />
-                  <span className="font-medium text-sm">
-                    {reel.postedBy?.name || "User"}
-                  </span>
-                </div>
-                <p className="truncate">{reel.caption || "No caption"}</p>
-                <div className="flex justify-between text-[10px] text-gray-200 mt-1">
-                  <span>❤️ {reel.likes?.length || 0} likes</span>
-                  <span>{new Date(reel.createdAt).toLocaleDateString()}</span>
-                </div>
+              <p className="truncate">{reel.caption || "No caption"}</p>
+              <div className="text-[10px] flex justify-between mt-1">
+                <span>❤️ {reel.likes?.length || 0}</span>
+                <span>{new Date(reel.createdAt).toLocaleDateString()}</span>
               </div>
-            </motion.div>
-          ))}
-        </motion.div>
-      )}
+            </div>
+          </motion.div>
+        ))}
+      </div>
 
-      {/* Modal */}
       <AnimatePresence>
         {selectedReel && (
-          <ReelModal reel={selectedReel} onClose={() => setSelectedReel(null)} />
+          <ReelModal
+            reel={selectedReel}
+            onClose={() => setSelectedReel(null)}
+            onLike={handleLike}
+            onComment={handleComment}
+            isLiked={likedReelIds.includes(selectedReel._id)}
+          />
         )}
       </AnimatePresence>
     </div>
   );
 };
 
-AllReelsFeed.propTypes = {
-  // No props are passed, but included for future extensibility
-};
-
 export default AllReelsFeed;
-
-
