@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState,useEffect } from "react";
 import {
   FaShoppingBag,
   FaRunning,
@@ -17,6 +17,7 @@ import {
 } from "react-icons/fa";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import { HoverEffect } from "../components/ui/card-hover-effect";
 
 const interests = [
   { icon: <FaCamera />, label: "Photography" },
@@ -35,11 +36,18 @@ const interests = [
   { icon: <FaGamepad />, label: "Video games" },
 ];
 
+// Convert interests to compatible format for HoverEffect
+const interestProjects = interests.map(({ icon, label }) => ({
+  title: label,
+  description: `You seem to enjoy ${label.toLowerCase()}. Nice vibe!`,
+  link: label, // Use label as unique key
+  icon: icon,
+}));
 
 function InterestSelector() {
   const [selected, setSelected] = useState([]);
   const [loading, setLoading] = useState(false);
-
+  const navigate = useNavigate();
 
   const toggleInterest = (label) => {
     setSelected((prev) =>
@@ -50,7 +58,8 @@ function InterestSelector() {
   };
 
   const handleContinue = async () => {
-    if (selected.length === 0) return alert("Please select at least 1 interest");
+    if (selected.length === 0)
+      return alert("Please select at least 1 interest");
 
     try {
       setLoading(true);
@@ -70,10 +79,9 @@ function InterestSelector() {
 
       if (data.success) {
         toast.success("Vibes updated successfully!");
-        
-        
+        // navigate("/next-page"); // optional
       } else {
-        toast.error("Failed to update vibe ");
+        toast.error("Failed to update vibe");
       }
     } catch (err) {
       console.error("Error updating vibe:", err);
@@ -83,33 +91,45 @@ function InterestSelector() {
     }
   };
 
+  useEffect(() => {
+  const fetchSelectedVibes = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const res = await fetch("http://localhost:5000/api/users/vibe", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+      if (data.success && Array.isArray(data.selectedVibes)) {
+        setSelected(data.selectedVibes); // ✅ set selected from backend
+      }
+    } catch (err) {
+      console.error("Error fetching vibes:", err);
+      toast.error("Failed to load your interests");
+    }
+  };
+
+  fetchSelectedVibes(); // 🔁 call on mount
+}, []);
+
+
   return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center px-4 py-10">
       <h2 className="text-2xl font-bold text-black text-center mb-6">
         Select your <br /> interests and set your vibe
       </h2>
 
-      <div className="grid grid-cols-3 gap-4 max-w-4xl w-full">
-        {interests.map(({ icon, label }) => (
-          <button
-            key={label}
-            onClick={() => toggleInterest(label)}
-            className={`flex items-center gap-2 px-4 py-3 rounded-xl border text-black text-sm font-medium shadow-sm transition-all duration-200 ${
-              selected.includes(label)
-                ? "bg-green-500 text-white"
-                : "bg-white border-gray-300"
-            }`}
-          >
-            <span
-              className={`text-lg ${
-                selected.includes(label) ? "text-white" : "text-green-500"
-              }`}
-            >
-              {icon}
-            </span>
-            {label}
-          </button>
-        ))}
+      <div className="w-full max-w-5xl mx-auto px-4">
+       <HoverEffect
+  items={interestProjects}
+  selected={selected}
+  onToggle={toggleInterest}
+/>
       </div>
 
       <button

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import axiosInstance from "../api/axiosInstance";
+import PhoneImage from "../assets/OTP_verification.jpg"; // Make sure this image exists
 
 function OTPVerify({ closeModal }) {
   const [phone, setPhone] = useState("");
@@ -56,71 +57,80 @@ function OTPVerify({ closeModal }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-white px-4">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="w-full max-w-md rounded-3xl bg-white/20 backdrop-blur-lg shadow-xl p-8 md:p-10 border border-white/30 text-center"
+        className="w-full max-w-4xl bg-white rounded-3xl shadow-xl p-6 md:p-10 flex flex-col md:flex-row items-center gap-10"
       >
-        {/* Heading */}
-        <h2 className="text-3xl font-extrabold text-green-600 mb-2">
-          {otpSent ? "Enter OTP" : "Phone Verification"}
-        </h2>
-        <p className="text-sm text-white/80 mb-6">
-          {otpSent
-            ? `OTP sent to ${phone}`
-            : "Enter your phone number to receive OTP"}
-        </p>
+        {/* Left Image Section */}
+        <div className="w-full md:w-1/2">
+          <img
+            src={PhoneImage}
+            alt="OTP Illustration"
+            className="w-full h-full object-contain"
+          />
+        </div>
 
-        {/* Phone Form or OTP Form */}
-        {!otpSent ? (
-          <form onSubmit={handleSendOTP} className="space-y-5">
-            <input
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value.replace(/[^0-9]/g, ""))}
-              maxLength="10"
-              placeholder="Enter 10-digit phone number"
-              className="w-full px-5 py-3 rounded-xl bg-white/10 text-white placeholder-white/60 border border-white/20 focus:outline-none focus:ring-2 focus:ring-green-400 text-center text-lg tracking-wide"
-              required
-            />
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 rounded-xl transition"
-            >
-              {loading ? "Sending OTP..." : "📨 Send OTP"}
-            </button>
-          </form>
-        ) : (
-          <form onSubmit={handleVerifyOTP} className="space-y-5">
-            <input
-              type="text"
-              value={otp}
-              onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ""))}
-              maxLength="6"
-              placeholder="Enter 6-digit OTP"
-              className="w-full px-5 py-3 rounded-xl bg-white/10 text-white placeholder-white/60 border border-white/20 focus:outline-none focus:ring-2 focus:ring-green-400 text-center text-lg tracking-widest"
-              required
-            />
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 rounded-xl transition"
-            >
-              {loading ? "Verifying..." : "✅ Verify OTP"}
-            </button>
-          </form>
-        )}
+        {/* Right Form Section */}
+        <div className="w-full md:w-1/2">
+          <h2 className="text-3xl font-extrabold text-green-600 mb-2">
+            {otpSent ? "Enter OTP" : "Phone Verification"}
+          </h2>
+          <p className="text-sm text-gray-600 mb-6">
+            {otpSent
+              ? `OTP sent to ${phone}`
+              : "Enter your phone number to receive OTP"}
+          </p>
 
-        {/* Cancel Button */}
-        <button
-          onClick={closeModal}
-          className="mt-6 text-sm text-white/70 hover:text-red-400 transition"
-        >
-          Cancel
-        </button>
+          {!otpSent ? (
+            <form onSubmit={handleSendOTP} className="space-y-5">
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value.replace(/[^0-9]/g, ""))}
+                maxLength="10"
+                placeholder="Enter 10-digit phone number"
+                className="w-full px-5 py-3 rounded-xl bg-gray-100 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-400 text-center text-lg tracking-wide"
+                required
+              />
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 rounded-xl transition"
+              >
+                {loading ? "Sending OTP..." : "📨 Send OTP"}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleVerifyOTP} className="space-y-5">
+              <input
+                type="text"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ""))}
+                maxLength="6"
+                placeholder="Enter 6-digit OTP"
+                className="w-full px-5 py-3 rounded-xl bg-gray-100 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-400 text-center text-lg tracking-widest"
+                required
+              />
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 rounded-xl transition"
+              >
+                {loading ? "Verifying..." : "✅ Verify OTP"}
+              </button>
+            </form>
+          )}
+
+          <button
+            onClick={closeModal}
+            className="mt-6 text-sm text-gray-500 hover:text-red-500 transition"
+          >
+            Cancel
+          </button>
+        </div>
       </motion.div>
     </div>
   );

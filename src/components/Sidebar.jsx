@@ -15,25 +15,48 @@ import {
   FaBars,
 } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
-import PropTypes from "prop-types";
+import axios from "axios";
+import Logo2 from "../assets/VibeX.white.png";
 import Logo from "../assets/VibeX.png";
 
 const Sidebar = () => {
-  const [isOpen, setIsOpen] = useState(false); // For mobile toggle
-  const [hovered, setHovered] = useState(false); // For desktop hover
+  const [isOpen, setIsOpen] = useState(false);
+  const [hovered, setHovered] = useState(false);
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
   const navigate = useNavigate();
 
-  const userId = JSON.parse(localStorage.getItem("user"))?._id;
   const token = localStorage.getItem("token");
+  const userData = JSON.parse(localStorage.getItem("user"));
+  const userId = userData?._id;
 
+  // Fetch user from API using Axios
   useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const res = await axios.get(
+          `http://localhost:5000/api/users/profile/${userId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        setUser(res.data?.data || null);
+      } catch (err) {
+        console.error("Error fetching user:", err.message);
+        setError("Failed to load profile.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
     if (userId && token) {
-      setUser({
-        _id: userId,
-        username: "admin",
-        avatar: "https://cdn-icons-png.flaticon.com/512/149/149071.png",
-      });
+      fetchUser();
     }
   }, [userId, token]);
 
@@ -41,9 +64,9 @@ const Sidebar = () => {
     () => [
       { label: "Dashboard", icon: <FaHome />, to: "/admin/dashboard" },
       { label: "Search", icon: <FaSearch />, to: "/search" },
-      { label: "Explore", icon: <FaCompass />, to: "/admin/explore" },
+      { label: "Explore", icon: <FaCompass />, to: "/location-search" },
       { label: "Reels", icon: <FaVideo />, to: "/reels" },
-      { label: "Messages", icon: <FaStream />, to: "/admin/messages" },
+      { label: "Messages", icon: <FaStream />, to: "/chat" },
       { label: "Notifications", icon: <FaHeart />, to: "/admin/notifications" },
       { label: "Upload", icon: <FaPlus />, to: "/upload_reel" },
       { label: "Analytics", icon: <FaChartBar />, to: "/admin/analytics" },
@@ -65,21 +88,20 @@ const Sidebar = () => {
     <>
       {/* Mobile Toggle Button */}
       <button
-        className="md:hidden fixed top-4 left-4 z-50 text-white bg-[#333] p-2 rounded-full"
+        className="md:hidden fixed top-4 left-4 z-50 text-black bg-gray-200 p-2 rounded-full"
         onClick={toggleSidebar}
         aria-label="Toggle sidebar"
       >
         <FaBars />
       </button>
 
-      {/* Sidebar */}
       <motion.div
         initial={{ width: 64 }}
         animate={{ width: isOpen || hovered ? 256 : 64 }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        className={`fixed top-0 left-0 z-50 bg-[#1f1f1f] text-white h-screen py-6 px-2 flex flex-col justify-between transition-colors duration-300 ${
+        className={`fixed top-0 left-0 z-50 bg-white text-black h-screen py-6 px-2 flex flex-col justify-between shadow-md transition-colors duration-300 ${
           isOpen ? "block md:w-64" : "block md:w-16"
         } md:block`}
       >
@@ -105,22 +127,22 @@ const Sidebar = () => {
                   transition={{ duration: 0.2 }}
                 />
               ) : (
-                <motion.span
+                <motion.img
                   key="icon"
-                  className="text-2xl"
+                  src={Logo2}
+                  alt="Logo Icon"
+                  className="h-8 object-contain"
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.8 }}
                   transition={{ duration: 0.2 }}
-                >
-                  🔥
-                </motion.span>
+                />
               )}
             </AnimatePresence>
           </motion.div>
         </div>
 
-        {/* Nav Links */}
+        {/* Navigation Links */}
         <div className="flex flex-col space-y-2">
           {navLinks.map(({ label, icon, to }) => (
             <NavLink
@@ -128,7 +150,9 @@ const Sidebar = () => {
               to={to}
               className={({ isActive }) =>
                 `relative flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
-                  isActive ? "bg-[#333] text-green-400" : "hover:bg-[#2a2a2a]"
+                  isActive
+                    ? "bg-gray-200 text-blue-600 font-medium"
+                    : "hover:bg-gray-100"
                 }`
               }
               role="link"
@@ -146,18 +170,13 @@ const Sidebar = () => {
                   {label}
                 </motion.span>
               )}
-              {!(isOpen || hovered) && (
-                <span className="absolute left-full ml-2 bg-[#333] text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                  {label}
-                </span>
-              )}
             </NavLink>
           ))}
 
           {/* Logout */}
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#2a2a2a] text-red-400 transition-all"
+            className="flex items-center gap-3 px-3 py-2 rounded-lg text-red-500 hover:bg-red-50 transition-all"
             aria-label="Logout"
           >
             <FaSignOutAlt className="text-lg" />
@@ -174,7 +193,7 @@ const Sidebar = () => {
           </button>
         </div>
 
-        {/* Bottom Profile Avatar */}
+        {/* Profile Avatar */}
         <div className="flex justify-center mt-4">
           <motion.img
             src={
@@ -182,7 +201,7 @@ const Sidebar = () => {
               user?.profileImage ||
               "https://cdn-icons-png.flaticon.com/512/149/149071.png"
             }
-            className="w-10 h-10 md:w-12 md:h-12 rounded-full border-2 border-gradient-to-r from-green-500 to-blue-500 object-cover"
+            className="w-10 h-10 md:w-12 md:h-12 rounded-full border-2 border-blue-400 object-cover"
             alt="Profile avatar"
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -190,16 +209,14 @@ const Sidebar = () => {
             onClick={() => user && navigate(`/profile/${user._id}`)}
             role="button"
             tabIndex={0}
-            onKeyDown={(e) => e.key === "Enter" && user && navigate(`/profile/${user._id}`)}
+            onKeyDown={(e) =>
+              e.key === "Enter" && user && navigate(`/profile/${user._id}`)
+            }
           />
         </div>
       </motion.div>
     </>
   );
-};
-
-Sidebar.propTypes = {
-  // No props are passed, but included for future extensibility
 };
 
 export default Sidebar;

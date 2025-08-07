@@ -15,16 +15,36 @@ import UploadReel from './components/UploadReel';
 import AllReelsFeed from './components/AllReelsFeed';
 import SearchUsers from './components/SearchUsers';
 import AppLayout from './components/AppLayout';
+import ChatPage from './pages/ChatPage';
+import ForgotPassword from './pages/ForgotPassword';
+import NotFound from './pages/NotFound';
+import MapPage from './pages/MapPage';
+
+
 
 function App() {
   return (
     <BrowserRouter>
-      <ToastContainer />
+      <ToastContainer
+  position="top-center"
+  autoClose={3000} // 3 sec
+  hideProgressBar={false}
+  newestOnTop={false}
+  closeOnClick
+  rtl={false}
+  pauseOnFocusLoss
+  draggable
+  pauseOnHover
+  theme="light" // or "dark"
+  limit={3}
+/>
+
       <Routes>
         {/* Pages without layout */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/otp-varification" element={<OTPVerify />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
 
         {/* All others with layout */}
         <Route element={<AppLayout />}>
@@ -36,6 +56,11 @@ function App() {
           <Route path="/upload_reel" element={<UploadReel />} />
           <Route path="/reels" element={<AllReelsFeed />} />
           <Route path="/search" element={<SearchUsers />} />
+          <Route path="/chat" element={<ChatPage />} />
+          <Route path="/messages/:receiverId" element={<ChatPage />} />
+             <Route path="/location-search" element={<MapPage />} />
+          
+          <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
     </BrowserRouter>

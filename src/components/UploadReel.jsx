@@ -1,6 +1,4 @@
-// src/pages/UploadReel.jsx
-
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
 import { ClipLoader } from "react-spinners";
@@ -8,6 +6,7 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { FaTimes } from "react-icons/fa";
 import profileDummy from "../assets/DummyProfile.jpeg";
+import { FileUpload } from "../components/ui/file-upload"; // 🔁 Make sure path is correct
 
 const UploadReel = () => {
   const [file, setFile] = useState(null);
@@ -18,8 +17,6 @@ const UploadReel = () => {
   const [user, setUser] = useState(null);
   const [loadingUser, setLoadingUser] = useState(true);
   const [error, setError] = useState(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const fileInputRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -28,6 +25,14 @@ const UploadReel = () => {
       if (preview) URL.revokeObjectURL(preview);
     };
   }, []);
+
+  useEffect(() => {
+    if (file) {
+      setPreview(URL.createObjectURL(file));
+    } else {
+      setPreview(null);
+    }
+  }, [file]);
 
   const fetchUser = async () => {
     const storedUser = localStorage.getItem("user");
@@ -57,18 +62,9 @@ const UploadReel = () => {
     }
   };
 
-  const handleFileChange = (selectedFile) => {
-    if (selectedFile && selectedFile.type.startsWith("video/")) {
-      setFile(selectedFile);
-      setPreview(URL.createObjectURL(selectedFile));
-    } else {
-      toast.error("Please select a valid video file 📹");
-    }
-  };
-
   const handleUpload = async () => {
     if (!file) {
-      toast.error("Please select a video to upload 📹");
+      toast.error("Please select an image to upload 🖼️");
       return;
     }
 
@@ -76,16 +72,18 @@ const UploadReel = () => {
     const token = localStorage.getItem("token");
 
     const formData = new FormData();
-    formData.append("file", file);
-    formData.append("upload_preset", "reels_upload");
-    formData.append("cloud_name", "dew9vyhs1");
-    formData.append("resource_type", "video");
+    formData.append("image", file);
+    formData.append("caption", caption);
 
     try {
-      const cloudRes = await axios.post(
-        "https://api.cloudinary.com/v1_1/dew9vyhs1/video/upload",
+      const res = await axios.post(
+        "http://localhost:5000/api/reels/upload",
         formData,
         {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
           onUploadProgress: (e) => {
             const percent = Math.round((e.loaded * 100) / e.total);
             setProgress(percent);
@@ -93,15 +91,7 @@ const UploadReel = () => {
         }
       );
 
-      const cloudURL = cloudRes.data.secure_url;
-
-      await axios.post(
-        "http://localhost:5000/api/reels/upload",
-        { videoUrl: cloudURL, caption },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      toast.success("🎉 Reel uploaded successfully!");
+      toast.success("🎉 Image uploaded successfully!");
       resetForm();
     } catch (err) {
       console.error("Upload failed:", err.message);
@@ -117,23 +107,6 @@ const UploadReel = () => {
     setProgress(0);
     if (preview) URL.revokeObjectURL(preview);
     setPreview(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = () => {
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const droppedFile = e.dataTransfer.files[0];
-    handleFileChange(droppedFile);
   };
 
   const memoizedUser = useMemo(() => user, [user]);
@@ -169,7 +142,7 @@ const UploadReel = () => {
         className="bg-white shadow-lg p-5 rounded-xl w-full max-w-lg border border-gray-200"
       >
         <h2 className="text-xl md:text-2xl font-bold text-center text-green-600 mb-4">
-          🎥 Upload Your Reel
+          🖼️ Upload Your Image Reel
         </h2>
 
         {/* User Info */}
@@ -193,43 +166,25 @@ const UploadReel = () => {
                 alt={`${memoizedUser.name}'s profile`}
               />
               <div>
-                <p className="font-medium text-gray-800 text-sm">{memoizedUser.name || "User"}</p>
+                <p className="font-medium text-gray-800 text-sm">
+                  {memoizedUser.name || "User"}
+                </p>
                 <p className="text-xs text-gray-500">Logged in</p>
               </div>
             </div>
           )
         )}
 
-        {/* Upload Box */}
-        <div
-          className={`border-dashed border-2 ${
-            isDragging ? "border-green-500 bg-green-100" : "border-green-300 bg-green-50"
-          } p-4 rounded-lg text-center cursor-pointer hover:bg-green-100 transition`}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-        >
-          <input
-            type="file"
-            accept="video/*"
-            onChange={(e) => handleFileChange(e.target.files[0])}
-            className="hidden"
-            id="videoUpload"
-            ref={fileInputRef}
-          />
-          <label htmlFor="videoUpload" className="cursor-pointer text-green-700 font-medium text-sm">
-            {file ? <span className="truncate block max-w-full">{file.name}</span> : "📂 Click or drag to upload a video"}
-          </label>
-        </div>
+        {/* File Upload Component */}
+        <FileUpload onChange={setFile} />
 
         {/* Preview */}
         {preview && (
           <div className="relative mt-3">
-            <video
+            <img
               src={preview}
-              controls
-              className="rounded-lg w-full shadow-sm"
-              aria-label="Video preview"
+              alt="preview"
+              className="rounded-lg w-full object-cover shadow-sm"
             />
             <button
               onClick={resetForm}
@@ -240,7 +195,7 @@ const UploadReel = () => {
           </div>
         )}
 
-        {/* Caption */}
+        {/* Caption Input */}
         <input
           type="text"
           placeholder="Write a caption..."

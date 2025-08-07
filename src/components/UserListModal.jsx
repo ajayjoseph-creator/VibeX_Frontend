@@ -1,4 +1,3 @@
-// components/UserListModal.jsx
 import React from "react";
 import { motion } from "framer-motion";
 import { AiOutlineClose } from "react-icons/ai";
@@ -27,26 +26,38 @@ function UserListModal({ title, users, onClose, onNavigate }) {
           <p className="text-gray-500 text-sm">No users found.</p>
         ) : (
           <div className="space-y-3">
-            {users.map((u) => (
-              <div
-                key={u._id}
-                className="flex items-center gap-3 cursor-pointer hover:bg-gray-100 p-2 rounded-md transition-all"
-                onClick={() => {
-                  onNavigate(u._id); // Navigate to user profile
-                  onClose(); // Close modal
-                }}
-              >
-                <img
-                  src={u.profileImage || "/default-profile.png"}
-                  alt="profile"
-                  className="w-10 h-10 rounded-full object-cover border border-gray-300"
-                />
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium">{u.name}</span>
-                  <span className="text-xs text-gray-500">@{u.username}</span>
+            {users.map((u) => {
+              // fallback checks
+              const name = u.name || u.username || "Unknown User";
+              const username = u.username || "unknown";
+
+              return (
+                <div
+                  key={u._id}
+                  className="flex items-center gap-3 cursor-pointer hover:bg-gray-100 p-2 rounded-md transition-all"
+                  onClick={() => {
+                    onNavigate(u._id);
+                    onClose();
+                  }}
+                >
+                  <img
+                    src={u.profileImage || "/default-profile.png"}
+                    alt="profile"
+                    className="w-10 h-10 rounded-full object-cover border border-gray-300"
+                  />
+                  <div className="flex flex-col">
+                    <span
+                      className={`text-sm font-medium ${
+                        u.hasLiked ? "text-green-600" : "text-gray-800"
+                      }`}
+                    >
+                      {name}
+                    </span>
+                    <span className="text-xs text-gray-500">@{username}</span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

@@ -4,6 +4,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { motion } from "framer-motion";
+import LocationPickerModal from "./LocationPickerModal";
 
 function EditProfile() {
   const { id } = useParams();
@@ -20,6 +21,8 @@ function EditProfile() {
   const [profession, setProfession] = useState("");
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showMap, setShowMap] = useState(false);
+
   const maxBioLength = 150;
 
   useEffect(() => {
@@ -31,6 +34,21 @@ function EditProfile() {
             Authorization: `Bearer ${token}`,
           },
         });
+        
+
+        const handleLocationSelect = async ({ lat, lng }) => {
+  try {
+    const response = await fetch(
+      `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`
+    );
+    const data = await response.json();
+    const address = data.results[0]?.formatted_address || `Lat: ${lat}, Lng: ${lng}`;
+    setLocation(address);
+  } catch (err) {
+    console.error("Error getting location name:", err);
+    setLocation(`Lat: ${lat}, Lng: ${lng}`);
+  }
+};
 
         const data = res.data.data;
         setUser(data);
@@ -255,15 +273,25 @@ function EditProfile() {
 
               {/* Location */}
               <div className="relative">
-                <input
-                  type="text"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  className="w-full px-4 pt-5 pb-2 rounded-xl bg-white/10 text-white placeholder-white/50 border border-white/20 focus:outline-none focus:ring-2 focus:ring-green-400 transition peer"
-                  placeholder="e.g. Kochi, Kerala"
-                  id="location"
-                  aria-label="Location"
-                />
+                <div className="relative">
+  <input
+    type="text"
+    value={location}
+    onClick={() => setShowMap(true)}
+    readOnly
+    className="w-full px-4 pt-5 pb-2 rounded-xl bg-white/10 text-white placeholder-white/50 border border-white/20 focus:outline-none focus:ring-2 focus:ring-green-400 transition peer cursor-pointer"
+    placeholder="Click to select on map"
+    id="location"
+    aria-label="Location"
+  />
+  <label
+    htmlFor="location"
+    className="absolute left-4 top-3 text-white/60 text-sm transition-all duration-200 peer-placeholder-shown:top-3 peer-placeholder-shown:text-base peer-focus:top-1 peer-focus:text-xs peer-focus:text-green-400"
+  >
+    Location
+  </label>
+</div>
+
                 <label
                   htmlFor="location"
                   className="absolute left-4 top-3 text-white/60 text-sm transition-all duration-200 peer-placeholder-shown:top-3 peer-placeholder-shown:text-base peer-focus:top-1 peer-focus:text-xs peer-focus:text-green-400"
@@ -371,6 +399,15 @@ function EditProfile() {
           </p>
         </div>
       </motion.div>
+      {showMap && (
+  <LocationPickerModal
+    onClose={() => setShowMap(false)}
+    onSelect={({ locationName }) => {
+      setLocation(locationName);
+      setShowMap(false);
+    }}
+  />
+)}
     </div>
   );
 }
