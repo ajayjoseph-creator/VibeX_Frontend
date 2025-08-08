@@ -19,10 +19,13 @@ import ChatPage from './pages/ChatPage';
 import ForgotPassword from './pages/ForgotPassword';
 import NotFound from './pages/NotFound';
 import MapPage from './pages/MapPage';
+import NotificationPage from './pages/NotificationPage';
+
 
 
 
 function App() {
+  const userId = JSON.parse(localStorage.getItem("user"))?._id;
   return (
     <BrowserRouter>
       <ToastContainer
@@ -59,8 +62,11 @@ function App() {
           <Route path="/chat" element={<ChatPage />} />
           <Route path="/messages/:receiverId" element={<ChatPage />} />
              <Route path="/location-search" element={<MapPage />} />
+             
           
           <Route path="*" element={<NotFound />} />
+            <Route path="/notifications" element={<NotificationPage userId={userId} />} />
+
         </Route>
       </Routes>
     </BrowserRouter>

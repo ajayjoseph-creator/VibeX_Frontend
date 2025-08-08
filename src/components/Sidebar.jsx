@@ -67,7 +67,7 @@ const Sidebar = () => {
       { label: "Explore", icon: <FaCompass />, to: "/location-search" },
       { label: "Reels", icon: <FaVideo />, to: "/reels" },
       { label: "Messages", icon: <FaStream />, to: "/chat" },
-      { label: "Notifications", icon: <FaHeart />, to: "/admin/notifications" },
+      { label: "Notifications", icon: <FaHeart />, to: "/notifications" },
       { label: "Upload", icon: <FaPlus />, to: "/upload_reel" },
       { label: "Analytics", icon: <FaChartBar />, to: "/admin/analytics" },
       { label: "Profile", icon: <FaUser />, to: `/profile/${userId}` },

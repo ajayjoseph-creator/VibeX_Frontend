@@ -9,6 +9,7 @@ import UserListModal from "../components/UserListModal";
 import banner from "../assets/banner1.png";
 import profile from "../assets/DummyProfile.jpeg";
 import { BentoGrid, BentoGridItem } from "../components/ui/bento-grid";
+import socket from "../socket";
 
 const Profile = () => {
   const { id } = useParams();
@@ -68,21 +69,29 @@ const Profile = () => {
   }, [id]);
 
   const handleFollow = async (targetUserId) => {
-    try {
-      const token = localStorage.getItem("token");
-      await axios.post(
-        `http://localhost:5000/api/users/follow/${targetUserId}`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      toast.success("Followed successfully 🎉");
-      fetchUser();
-    } catch (err) {
-      toast.error("Follow failed 💥");
-    }
-  };
+  try {
+    const token = localStorage.getItem("token");
+    await axios.post(
+      `http://localhost:5000/api/users/follow/${targetUserId}`,
+      {},
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    // 🔔 Emit socket notification
+    socket.emit("sendNotification", {
+      senderId: currentUserId,
+      receiverId: targetUserId,
+      type: "follow",
+    });
+
+    toast.success("Followed successfully 🎉");
+    fetchUser();
+  } catch (err) {
+    toast.error("Follow failed 💥");
+  }
+};
 
   const handleUnfollow = async (targetUserId) => {
     try {
