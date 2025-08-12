@@ -62,16 +62,16 @@ const Sidebar = () => {
 
   const navLinks = useMemo(
     () => [
-      { label: "Dashboard", icon: <FaHome />, to: "/admin/dashboard" },
+      //{ label: "Dashboard", icon: <FaHome />, to: "/admin/dashboard" },
       { label: "Search", icon: <FaSearch />, to: "/search" },
       { label: "Explore", icon: <FaCompass />, to: "/location-search" },
-      { label: "Reels", icon: <FaVideo />, to: "/reels" },
+      { label: "Posts", icon: <FaVideo />, to: "/reels" },
       { label: "Messages", icon: <FaStream />, to: "/chat" },
       { label: "Notifications", icon: <FaHeart />, to: "/notifications" },
       { label: "Upload", icon: <FaPlus />, to: "/upload_reel" },
-      { label: "Analytics", icon: <FaChartBar />, to: "/admin/analytics" },
+      //{ label: "Analytics", icon: <FaChartBar />, to: "/admin/analytics" },
       { label: "Profile", icon: <FaUser />, to: `/profile/${userId}` },
-      { label: "Settings", icon: <FaCog />, to: "/admin/settings" },
+      //{ label: "Settings", icon: <FaCog />, to: "/admin/settings" },
     ],
     [userId]
   );

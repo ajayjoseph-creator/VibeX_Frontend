@@ -30,7 +30,7 @@ function ReelModal({ reel, onClose }) {
       await navigator.clipboard.writeText(window.location.href);
       toast.success("📋 Link copied to clipboard!");
       setShowShare(false);
-    } catch (err) {
+    } catch {
       toast.error("❌ Failed to copy link.");
     }
   };
@@ -38,28 +38,17 @@ function ReelModal({ reel, onClose }) {
   const handleLike = async () => {
     try {
       const token = localStorage.getItem("token");
-      if (!token) {
-        toast.error("❌ Login required to like.");
-        return;
-      }
+      if (!token) return toast.error("❌ Login required to like.");
 
-      await axios.put(
+      const res = await axios.put(
         `http://localhost:5000/api/reels/like/${reel._id}`,
         {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      setLiked((prevLiked) => {
-        const updatedLiked = !prevLiked;
-        setLikeCount((prevCount) =>
-          updatedLiked ? prevCount + 1 : prevCount - 1
-        );
-        return updatedLiked;
-      });
+      // Backend should return { isLiked, likesCount }
+      setLiked(res.data.isLiked);
+      setLikeCount(res.data.likesCount);
     } catch (err) {
       console.error("Like error:", err.response?.data || err.message);
       toast.error("❌ Failed to like the reel.");
@@ -68,32 +57,23 @@ function ReelModal({ reel, onClose }) {
 
   const handleCommentSubmit = async (e) => {
     e.preventDefault();
-    if (!commentText.trim()) {
-      toast.warning("⚠️ Comment cannot be empty");
-      return;
-    }
+    if (!commentText.trim()) return toast.warning("⚠️ Comment cannot be empty");
 
     try {
       const token = localStorage.getItem("token");
-      if (!token) {
-        toast.error("❌ Login required to comment.");
-        return;
-      }
+      if (!token) return toast.error("❌ Login required to comment.");
 
       const res = await axios.post(
         `http://localhost:5000/api/reels/comment/${reel._id}`,
         { text: commentText },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
+      // Backend should return populated comment object
       setComments((prev) => [...prev, res.data]);
       setCommentText("");
       toast.success("✅ Comment posted!");
-    } catch (err) {
+    } catch {
       toast.error("❌ Failed to post comment.");
     }
   };
@@ -111,7 +91,7 @@ function ReelModal({ reel, onClose }) {
       exit={{ opacity: 0 }}
     >
       <div className="relative w-[380px] h-[90vh] bg-black rounded-xl overflow-hidden flex flex-col shadow-xl">
-        {/* 🔙 Close Button */}
+        {/* Close Button */}
         <button
           onClick={onClose}
           className="absolute top-2 left-2 text-white bg-black/50 p-1 rounded-full z-10"
@@ -119,20 +99,28 @@ function ReelModal({ reel, onClose }) {
           <AiOutlineClose size={20} />
         </button>
 
-        {/* 🎥 Video */}
+        {/* Media */}
         <div className="flex-grow relative">
-          <video
-            src={reel.videoUrl}
-            className="w-full h-full object-cover"
-            autoPlay
-            controls
-            loop
-          />
+          {reel.mediaUrl?.match(/\.(mp4|webm|ogg)$/i) ? (
+            <video
+              src={reel.mediaUrl}
+              className="w-full h-full object-cover"
+              autoPlay
+              controls
+              loop
+            />
+          ) : (
+            <img
+              src={reel.mediaUrl}
+              alt="Post"
+              className="w-full h-full object-cover"
+            />
+          )}
         </div>
 
-        {/* 👉 Actions */}
+        {/* Actions */}
         <div className="absolute top-[30%] right-2 flex flex-col gap-4 items-center text-white text-2xl">
-          {/* ❤️ Like */}
+          {/* Like */}
           <button
             onClick={handleLike}
             className={`hover:scale-110 transition ${
@@ -143,7 +131,7 @@ function ReelModal({ reel, onClose }) {
             <div className="text-xs mt-1">{likeCount}</div>
           </button>
 
-          {/* 💬 Comment */}
+          {/* Comment */}
           <button
             onClick={handleCommentIconClick}
             className="hover:scale-110 transition"
@@ -152,7 +140,7 @@ function ReelModal({ reel, onClose }) {
             <div className="text-xs mt-1">{comments.length}</div>
           </button>
 
-          {/* 🔗 Share */}
+          {/* Share */}
           <div className="relative">
             <button
               onClick={() => setShowShare(!showShare)}
@@ -180,7 +168,7 @@ function ReelModal({ reel, onClose }) {
           </div>
         </div>
 
-        {/* 🧠 User Info + Caption */}
+        {/* User Info */}
         <div
           onClick={() => {
             if (reel.postedBy?._id) {
@@ -191,12 +179,12 @@ function ReelModal({ reel, onClose }) {
           className="absolute bottom-[90px] left-3 text-white text-sm max-w-[75%] cursor-pointer"
         >
           <p className="font-bold hover:underline">
-            @{reel.postedBy?.name || "User"}
+            @{reel.postedBy?.username || reel.postedBy?.name || "User"}
           </p>
           <p className="text-xs mt-1">{reel.caption || "No caption"}</p>
         </div>
 
-        {/* 💬 Fullscreen Comments UI */}
+        {/* Comments UI */}
         {showCommentInput && (
           <div className="absolute bottom-0 left-0 w-full h-[55%] bg-white z-50 flex flex-col rounded-t-xl overflow-hidden">
             <div className="flex justify-between items-center p-2 border-b">
@@ -211,7 +199,9 @@ function ReelModal({ reel, onClose }) {
                 comments.map((comment, i) => (
                   <div key={i} className="border-b pb-1">
                     <p className="font-medium">
-                      @{comment.commentedBy?.name || "User"}
+                      @{comment.commentedBy?.username ||
+                        comment.commentedBy?.name ||
+                        "User"}
                     </p>
                     <p>{comment.text}</p>
                   </div>

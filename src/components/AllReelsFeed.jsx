@@ -41,7 +41,7 @@ const AllReelsFeed = () => {
           : [...prev, reelId]
       );
 
-      // Refresh like count
+      // Refresh like count in UI
       setReels((prev) =>
         prev.map((reel) =>
           reel._id === reelId
@@ -64,7 +64,6 @@ const AllReelsFeed = () => {
       await axios.post(`http://localhost:5000/api/reels/comment/${reelId}`, {
         text: comment,
       });
-      // You can also optionally update the comments in UI
     } catch (err) {
       toast.error("Failed to comment");
     }
@@ -107,52 +106,64 @@ const AllReelsFeed = () => {
   return (
     <div className="min-h-screen bg-gray-100 px-4 py-6">
       <h2 className="text-2xl font-bold text-center text-green-500 mb-6">
-        🔥 Trending Reels
+        🔥 Trending Posts
       </h2>
 
       <div className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {memoizedReels.map((reel, i) => (
-          <motion.div
-            key={i}
-            className="relative group cursor-pointer rounded-lg overflow-hidden border bg-white shadow"
-            onClick={() => setSelectedReel(reel)}
-            whileHover={{ scale: 1.02 }}
-          >
-            <div className="relative" style={{ paddingTop: "177.78%" }}>
-              <video
-                src={reel.videoUrl}
-                className="absolute top-0 left-0 w-full h-full object-cover"
-                muted
-                loop
-                onMouseEnter={(e) => e.target.play()}
-                onMouseLeave={(e) => e.target.pause()}
-              />
-            </div>
-            <div className="absolute bottom-0 left-0 w-full px-3 py-2 bg-gradient-to-t from-black/60 to-transparent text-white">
-              <div
-                className="flex items-center gap-2 mb-1 cursor-pointer"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigate(`/profile/${reel.postedBy?._id}`);
-                }}
-              >
-                <img
-                  src={reel.postedBy?.profileImage || "/default-profile.png"}
-                  className="w-6 h-6 rounded-full border object-cover"
-                  alt="User"
-                />
-                <span className="text-sm font-medium">
-                  {reel.postedBy?.name || "User"}
-                </span>
+        {memoizedReels.map((reel, i) => {
+          const isVideo = reel.mediaUrl?.toLowerCase().endsWith(".mp4");
+          return (
+            <motion.div
+              key={i}
+              className="relative group cursor-pointer rounded-lg overflow-hidden border bg-white shadow"
+              onClick={() => setSelectedReel(reel)}
+              whileHover={{ scale: 1.02 }}
+            >
+              <div className="relative" style={{ paddingTop: "100%" }}>
+                {isVideo ? (
+                  <video
+                    src={reel.mediaUrl}
+                    className="absolute top-0 left-0 w-full h-full object-cover"
+                    muted
+                    loop
+                    onMouseEnter={(e) => e.target.play()}
+                    onMouseLeave={(e) => e.target.pause()}
+                  />
+                ) : (
+                  <img
+                    src={reel.mediaUrl}
+                    alt="Post"
+                    className="absolute top-0 left-0 w-full h-full object-cover group-hover:scale-105 transition"
+                  />
+                )}
               </div>
-              <p className="truncate">{reel.caption || "No caption"}</p>
-              <div className="text-[10px] flex justify-between mt-1">
-                <span>❤️ {reel.likes?.length || 0}</span>
-                <span>{new Date(reel.createdAt).toLocaleDateString()}</span>
+
+              <div className="absolute bottom-0 left-0 w-full px-3 py-2 bg-gradient-to-t from-black/60 to-transparent text-white">
+                <div
+                  className="flex items-center gap-2 mb-1 cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/profile/${reel.postedBy?._id}`);
+                  }}
+                >
+                  <img
+                    src={reel.postedBy?.profileImage || "/default-profile.png"}
+                    className="w-6 h-6 rounded-full border object-cover"
+                    alt="User"
+                  />
+                  <span className="text-sm font-medium">
+                    {reel.postedBy?.name || "User"}
+                  </span>
+                </div>
+                <p className="truncate">{reel.caption || "No caption"}</p>
+                <div className="text-[10px] flex justify-between mt-1">
+                  <span>❤️ {reel.likes?.length || 0}</span>
+                  <span>{new Date(reel.createdAt).toLocaleDateString()}</span>
+                </div>
               </div>
-            </div>
-          </motion.div>
-        ))}
+            </motion.div>
+          );
+        })}
       </div>
 
       <AnimatePresence>

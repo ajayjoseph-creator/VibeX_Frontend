@@ -10,19 +10,27 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 
+// ✅ Yup schema updated for lowercase email check
 const schema = yup.object().shape({
   name: yup
     .string()
     .required("Name is required")
     .matches(/^[A-Z][a-zA-Z ]*$/, "First letter must be capital"),
-  email: yup.string().email("Invalid email").required("Email is required"),
+  email: yup
+    .string()
+    .email("Invalid email")
+    .required("Email is required")
+    .test(
+      "is-lowercase",
+      "Email must be lowercase",
+      (value) => value === value?.toLowerCase()
+    ),
   password: yup.string().min(6, "Minimum 6 characters").required("Password is required"),
   confirmPassword: yup
     .string()
     .oneOf([yup.ref("password"), null], "Passwords must match")
     .required("Confirm Password is required"),
 });
-
 
 function Register({ closeModal, switchToLogin }) {
   const navigate = useNavigate();
@@ -42,7 +50,13 @@ function Register({ closeModal, switchToLogin }) {
     mode: "onBlur",
   });
 
+  // ✅ Added lowercase email toast block
   const onSubmitInitial = async (data) => {
+    if (data.email !== data.email.toLowerCase()) {
+      toast.error("❌ Email must be in lowercase");
+      return;
+    }
+
     try {
       setLoading(true);
       const res = await axios.post("http://localhost:5000/api/users/send-otp", {
@@ -100,11 +114,7 @@ function Register({ closeModal, switchToLogin }) {
       <div className="w-full max-w-4xl aspect-[3/2] bg-black/10 backdrop-blur-md rounded-2xl overflow-hidden shadow-2xl border border-black/10 flex flex-col md:flex-row">
         {/* Left Side */}
         <div className="w-full md:w-1/2 relative h-52 md:h-full">
-          <img
-            src={RegisterImage}
-            alt="Register Poster"
-            className="w-full h-full object-cover"
-          />
+          <img src={RegisterImage} alt="Register Poster" className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-black/40" />
         </div>
 
@@ -187,7 +197,7 @@ function Register({ closeModal, switchToLogin }) {
 
             <div className="mt-4 text-center">
               <button
-                onClick={()=>navigate('/login')}
+                onClick={() => navigate("/login")}
                 className="text-sm text-black/80 hover:text-green-600 transition"
               >
                 Already have an account? <span className="underline">Login</span>
@@ -206,7 +216,6 @@ function Input({ name, type, label, register, error }) {
       <input
         type={type}
         {...register(name)}
-        
         className="w-full px-4 pt-5 pb-2 rounded-xl bg-white text-black placeholder-black/50 border border-black/20 focus:outline-none focus:ring-2 focus:ring-green-400 transition peer"
       />
       <label className="absolute left-4 top-3 text-black/60 text-sm peer-placeholder-shown:top-3 peer-placeholder-shown:text-base peer-focus:top-1 peer-focus:text-xs peer-focus:text-green-400">
@@ -223,7 +232,6 @@ function PasswordInput({ name, label, register, error, show, setShow }) {
       <input
         type={show ? "text" : "password"}
         {...register(name)}
-        
         className="w-full px-4 pt-5 pb-2 rounded-xl bg-white text-black placeholder-black/50 border border-black/20 focus:outline-none focus:ring-2 focus:ring-green-400 transition peer"
       />
       <label className="absolute left-4 top-3 text-black/60 text-sm peer-placeholder-shown:top-3 peer-placeholder-shown:text-base peer-focus:top-1 peer-focus:text-xs peer-focus:text-green-400">
